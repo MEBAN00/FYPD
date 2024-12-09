@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <nav class="flex justify-between items-center bg-white/80 backdrop-blur-md rounded-xl p-4 shadow-lg mb-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full"></div>
+                <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                    AP
+                </h1>
+            </div>
+            <div class="flex space-x-4">
+                <a href="dashboard.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
+                    Home
+                </a>
+                <a href="inventory.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
+                    Inventory
+                </a>
+                <a href="sales.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
+                    Sales
+                </a>
+                <a href="prediction.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
+                    Analytics & Prediction
+                </a>
+            </div>
+        </nav>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2">
+                <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                            Welcome back, John Doe! 👋
+                        </h2>
+                        <div class="text-sm text-gray-500">
+                            Today, December 8, 2024
+                        </div>
+                    </div>
+                    <p class="text-gray-600">
+                        Here's a snapshot of your store's performance today.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 text-center hover:scale-105 transform transition duration-300">
+                        <div class="text-sm text-gray-500 mb-2">Total Sales (Today)</div>
+                        <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                            ₦75,000
+                        </div>
+                        <div class="text-green-500 text-sm mt-2">+12.5% ↑</div>
+                    </div>
+                    <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 text-center hover:scale-105 transform transition duration-300">
+                        <div class="text-sm text-gray-500 mb-2">Total Transactions</div>
+                        <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                            25
+                        </div>
+                        <div class="text-green-500 text-sm mt-2">+8% ↑</div>
+                    </div>
+                    <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 text-center hover:scale-105 transform transition duration-300">
+                        <div class="text-sm text-gray-500 mb-2">Total Revenue (Month)</div>
+                        <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                            ₦1,200,000
+                        </div>
+                        <div class="text-green-500 text-sm mt-2">+15.3% ↑</div>
+                    </div>
+                </div>
+
+                <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 mt-6">
+                    <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
+                        Monthly Revenue Trends
+                    </h3>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div>
+                <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
+                        Recent Activity
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <div>
+                                <div class="font-semibold">New Sale</div>
+                                <div class="text-sm text-gray-500">Nike Sneakers</div>
+                            </div>
+                            <div class="text-green-600">+₦25,000</div>
+                        </div>
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <div>
+                                <div class="font-semibold">Refund Processed</div>
+                                <div class="text-sm text-gray-500">Adidas Hoodie</div>
+                            </div>
+                            <div class="text-red-600">-₦5,000</div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-semibold">Inventory Restock</div>
+                                <div class="text-sm text-gray-500">Summer Collection</div>
+                            </div>
+                            <div class="text-blue-600">₦100,000</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                datasets: [{
+                    label: 'Monthly Revenue',
+                    data: [650000, 750000, 800000, 900000, 1000000, 1200000, 1500000],
+                    borderColor: 'rgba(59, 130, 246, 0.8)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₦' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

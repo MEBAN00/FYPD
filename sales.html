@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Management - StorePro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <nav class="flex justify-between items-center bg-white/80 backdrop-blur-md rounded-xl p-4 shadow-lg mb-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full"></div>
+                <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                    StorePro Sales
+                </h1>
+            </div>
+            <div class="flex space-x-4">
+                <a href="#" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
+                    Dashboard
+                </a>
+                <a href="#" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
+                    Inventory
+                </a>
+                <a href="#" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
+                    New Sale
+                </a>
+            </div>
+        </nav>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2">
+                <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                            Sales History
+                        </h2>
+                        <button id="newSaleBtn" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition duration-300">
+                            + Create New Sale
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="py-3 px-4">Sale ID</th>
+                                    <th class="py-3 px-4">Product</th>
+                                    <th class="py-3 px-4">Quantity</th>
+                                    <th class="py-3 px-4">Unit Price</th>
+                                    <th class="py-3 px-4">Total Value</th>
+                                    <th class="py-3 px-4">Date</th>
+                                    <th class="py-3 px-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesTableBody">
+                                <tr class="border-b hover:bg-blue-50 transition">
+                                    <td class="py-3 px-4">#SA001</td>
+                                    <td class="py-3 px-4">Nike Air Max</td>
+                                    <td class="py-3 px-4">2</td>
+                                    <td class="py-3 px-4">₦25,000</td>
+                                    <td class="py-3 px-4">₦50,000</td>
+                                    <td class="py-3 px-4">Dec 8, 2024</td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex space-x-2">
+                                            <button class="text-blue-500 hover:text-blue-700">
+                                                <i data-feather="eye" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
+                        Sales Summary
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="bg-blue-100 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600 mb-2">Total Sales Today</div>
+                            <div class="text-2xl font-bold text-blue-800">₦50,000</div>
+                        </div>
+                        <div class="bg-green-100 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600 mb-2">Total Sales This Month</div>
+                            <div class="text-2xl font-bold text-green-800">₦250,000</div>
+                        </div>
+                        <div class="bg-purple-100 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600 mb-2">Best Selling Product</div>
+                            <div class="text-2xl font-bold text-purple-800">Nike Air Max</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Sale Modal -->
+        <div id="newSaleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div class="bg-white rounded-xl p-8 w-full max-w-md">
+                <h2 class="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                    Create New Sale
+                </h2>
+                <form id="newSaleForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Product</label>
+                        <select id="productSelect" class="w-full px-3 py-2 border rounded-lg">
+                            <option value="">Select Product</option>
+                            <option value="nike-air-max" data-price="25000" data-inventory="150">Nike Air Max - ₦25,000 (150 in stock)</option>
+                            <option value="adidas-hoodie" data-price="15000" data-inventory="75">Adidas Hoodie - ₦15,000 (75 in stock)</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2">Quantity</label>
+                            <input id="quantityInput" type="number" class="w-full px-3 py-2 border rounded-lg" placeholder="0" min="1">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">Unit Price</label>
+                            <input id="unitPriceInput" type="text" class="w-full px-3 py-2 border rounded-lg" readonly>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Total Value</label>
+                        <input id="totalValueInput" type="text" class="w-full px-3 py-2 border rounded-lg" readonly>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" id="cancelSaleBtn" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg">
+                            Complete Sale
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+
+        // Fetch product list from JSON file
+        async function loadProductList() {
+            try {
+                const response = await fetch('ACTIV/product_list.json');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch product list');
+                }
+                const productList = await response.json();
+                
+                // Populate product dropdown
+                const productSelect = document.getElementById('product');
+                
+                // Sort products alphabetically
+                productList.sort().forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product;
+                    option.textContent = product;
+                    productSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading product list:', error);
+                const productSelect = document.getElementById('product');
+                productSelect.innerHTML = '<option>Error loading products</option>';
+            }
+        }
+
+        // Load product list when page loads
+        document.addEventListener('DOMContentLoaded', loadProductList);
+
+        // Modal Toggle
+        const newSaleBtn = document.getElementById('newSaleBtn');
+        const newSaleModal = document.getElementById('newSaleModal');
+        const cancelSaleBtn = document.getElementById('cancelSaleBtn');
+
+        newSaleBtn.addEventListener('click', () => {
+            newSaleModal.classList.remove('hidden');
+        });
+
+        cancelSaleBtn.addEventListener('click', () => {
+            newSaleModal.classList.add('hidden');
+        });
+
+        // Dynamic Pricing and Calculation
+        const productSelect = document.getElementById('productSelect');
+        const quantityInput = document.getElementById('quantityInput');
+        const unitPriceInput = document.getElementById('unitPriceInput');
+        const totalValueInput = document.getElementById('totalValueInput');
+        const newSaleForm = document.getElementById('newSaleForm');
+
+        productSelect.addEventListener('change', (e) => {
+            const selectedOption = e.target.selectedOptions[0];
+            const price = selectedOption.getAttribute('data-price');
+            const inventory = selectedOption.getAttribute('data-inventory');
+            
+            unitPriceInput.value = `₦${parseInt(price).toLocaleString()}`;
+            quantityInput.max = inventory;
+        });
+
+        quantityInput.addEventListener('input', () => {
+            const price = productSelect.selectedOptions[0].getAttribute('data-price');
+            const quantity = quantityInput.value;
+            
+            const totalValue = price * quantity;
+            totalValueInput.value = `₦${totalValue.toLocaleString()}`;
+        });
+
+        newSaleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const product = productSelect.value;
+            const quantity = parseInt(quantityInput.value);
+            const totalValue = parseFloat(totalValueInput.value.replace('₦', '').replace(',', ''));
+            
+            // Create a new sale row
+            const salesTableBody = document.getElementById('salesTableBody');
+            const newRow = document.createElement('tr');
+            newRow.classList.add('border-b', 'hover:bg-blue-50', 'transition');
+            newRow.innerHTML = `
+                <td class="py-3 px-4">#SA${Math.floor(Math.random() * 1000)}</td>
+                <td class="py-3 px-4">${productSelect.selectedOptions[0].text.split(' - ')[0]}</td>
+                <td class="py-3 px-4">${quantity}</td>
+                <td class="py-3 px-4">₦${parseInt(productSelect.selectedOptions[0].getAttribute('data-price')).toLocaleString()}</td>
+                <td class="py-3 px-4">₦${totalValue.toLocaleString()}</td>
+                <td class="py-3 px-4">${new Date().toLocaleDateString()}</td>
+                <td class="py-3 px-4">
+                    <div class="flex space-x-2">
+                        <button class="text-blue-500 hover:text-blue-700">
+                            <i data-feather="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            salesTableBody.prepend(newRow);
+            feather.replace();
+
+            // Close modal
+            newSaleModal.classList.add('hidden');
+
+            // Reset form
+            newSaleForm.reset();
+
+            // In a real system, this would trigger backend updates to:
+            // 1. Reduce inventory
+            // 2. Update sales totals
+            // 3. Sync with dashboard metrics
+        });
+    </script>
+</body>
+</html>

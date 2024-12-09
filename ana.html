@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics & Prediction</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-100">
+    <div class="min-h-screen flex flex-col">
+        <!-- Navbar -->
+        <nav class="bg-blue-600 text-white p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Analytics & Prediction</h1>
+                <div class="space-x-4 flex items-center">
+                    <a href="inventory.html" class="hover:text-blue-200">Inventory</a>
+                    <a href="sales.html" class="hover:text-blue-200">Sales</a>
+                    <a href="analytics.html" class="hover:text-blue-200">Analytics</a>
+                    <a href="login.html" class="hover:text-blue-200" id="loginLink">Login</a>
+                    <a href="#" class="hover:text-blue-200 hidden" id="logoutLink">Logout</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="flex-grow container mx-auto px-4 py-8 space-y-8">
+            
+            <!-- Sales Prediction -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Prediction Form -->
+                <div class="md:col-span-2 bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-4">Sales Prediction</h2>
+                    <form id="predictionForm" class="space-y-4">
+                        <div>
+                            <label for="itemName" class="block text-sm font-medium text-gray-700">Item Name</label>
+                            <input type="text" id="itemName" name="itemName"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Enter item name" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="quantity" class="block text-sm font-medium text-gray-700">Quantity Sold</label>
+                                <input type="number" id="quantity" name="quantity"
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    required>
+                            </div>
+                            <div>
+                                <label for="itemCost" class="block text-sm font-medium text-gray-700">Item Cost</label>
+                                <input type="number" id="itemCost" name="itemCost"
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    required>
+                            </div>
+                        </div>
+                        <button type="submit"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+                            Predict Gross Profit
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Prediction Result -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-4">Prediction Result</h2>
+                    <div id="predictionResult" class="hidden">
+                        <div class="text-4xl font-bold text-blue-600 mb-2">₦<span id="prediction"></span></div>
+                        <p class="text-gray-600">Estimated Gross Profit</p>
+                    </div>
+                    <div id="noPrediction" class="text-gray-500">
+                        No prediction made yet. Fill out the form to get a sales prediction.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 2: Profit Margin Analysis -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-4">Profit Margin Analysis</h2>
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2 text-left">Product</th>
+                            <th class="px-4 py-2 text-left">Cost Price</th>
+                            <th class="px-4 py-2 text-left">Selling Price</th>
+                            <th class="px-4 py-2 text-left">Gross Profit</th>
+                            <th class="px-4 py-2 text-left">Profit Margin (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="profitMarginTable">
+                        <!-- Dynamically populate with products' profit data -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Feature 3: Sales Breakdown by Category -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-4">Sales Breakdown by Category</h2>
+                <div class="chart-container" style="position: relative; height: 300px;">
+                    <canvas id="salesByCategoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Feature 5: Inventory Turnover Analysis -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-4">Inventory Turnover Analysis</h2>
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2 text-left">Product</th>
+                            <th class="px-4 py-2 text-left">Stock Available</th>
+                            <th class="px-4 py-2 text-left">Units Sold</th>
+                            <th class="px-4 py-2 text-left">Turnover Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTurnoverTable">
+                        <!-- Dynamically populate with inventory turnover data -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-4">
+            <div class="container mx-auto text-center">
+                <p>&copy; 2024 NHP. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="fine.js"></script>
+    <script>
+        // Script to render charts (for Sales Breakdown by Category)
+        const salesByCategoryChart = new Chart(document.getElementById('salesByCategoryChart').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: ['Category A', 'Category B', 'Category C'], // Replace with dynamic categories
+                datasets: [{
+                    label: 'Sales by Category',
+                    data: [300, 200, 100], // Replace with dynamic sales data
+                    backgroundColor: ['#4c51bf', '#81e6d9', '#f56565'],
+                    hoverBackgroundColor: ['#2b6cb0', '#38b2ac', '#c53030']
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+    </script>
+</body>
+
+</html>
