@@ -55,21 +55,7 @@
                                 </tr>
                             </thead>
                             <tbody id="salesTableBody">
-                                <tr class="border-b hover:bg-blue-50 transition">
-                                    <td class="py-3 px-4">#SA001</td>
-                                    <td class="py-3 px-4">Nike Air Max</td>
-                                    <td class="py-3 px-4">2</td>
-                                    <td class="py-3 px-4">₦25,000</td>
-                                    <td class="py-3 px-4">₦50,000</td>
-                                    <td class="py-3 px-4">Dec 8, 2024</td>
-                                    <td class="py-3 px-4">
-                                        <div class="flex space-x-2">
-                                            <button class="text-blue-500 hover:text-blue-700">
-                                                <i data-feather="eye" class="w-4 h-4"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                <!-- Sales rows will be dynamically populated here -->
                             </tbody>
                         </table>
                     </div>
@@ -84,15 +70,15 @@
                     <div class="space-y-4">
                         <div class="bg-blue-100 p-4 rounded-lg">
                             <div class="text-sm text-gray-600 mb-2">Total Sales Today</div>
-                            <div class="text-2xl font-bold text-blue-800">₦50,000</div>
+                            <div class="text-2xl font-bold text-blue-800">₦0</div>
                         </div>
                         <div class="bg-green-100 p-4 rounded-lg">
                             <div class="text-sm text-gray-600 mb-2">Total Sales This Month</div>
-                            <div class="text-2xl font-bold text-green-800">₦250,000</div>
+                            <div class="text-2xl font-bold text-green-800">₦0</div>
                         </div>
                         <div class="bg-purple-100 p-4 rounded-lg">
                             <div class="text-sm text-gray-600 mb-2">Best Selling Product</div>
-                            <div class="text-2xl font-bold text-purple-800">Nike Air Max</div>
+                            <div class="text-2xl font-bold text-purple-800">-</div>
                         </div>
                     </div>
                 </div>
@@ -108,16 +94,14 @@
                 <form id="newSaleForm">
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">Product</label>
-                        <select id="productSelect" class="w-full px-3 py-2 border rounded-lg">
+                        <select id="productSelect" class="w-full px-3 py-2 border rounded-lg" required>
                             <option value="">Select Product</option>
-                            <option value="nike-air-max" data-price="25000" data-inventory="150">Nike Air Max - ₦25,000 (150 in stock)</option>
-                            <option value="adidas-hoodie" data-price="15000" data-inventory="75">Adidas Hoodie - ₦15,000 (75 in stock)</option>
                         </select>
                     </div>
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-gray-700 mb-2">Quantity</label>
-                            <input id="quantityInput" type="number" class="w-full px-3 py-2 border rounded-lg" placeholder="0" min="1">
+                            <input id="quantityInput" type="number" class="w-full px-3 py-2 border rounded-lg" placeholder="0" min="1" required>
                         </div>
                         <div>
                             <label class="block text-gray-700 mb-2">Unit Price</label>
@@ -143,111 +127,224 @@
         // Initialize Feather Icons
         feather.replace();
 
-        // Fetch product list from JSON file
-        async function loadProductList() {
-            try {
-                const response = await fetch('ACTIV/product_list.json');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch product list');
-                }
-                const productList = await response.json();
-                
-                // Populate product dropdown
-                const productSelect = document.getElementById('product');
-                
-                // Sort products alphabetically
-                productList.sort().forEach(product => {
-                    const option = document.createElement('option');
-                    option.value = product;
-                    option.textContent = product;
-                    productSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading product list:', error);
-                const productSelect = document.getElementById('product');
-                productSelect.innerHTML = '<option>Error loading products</option>';
-            }
-        }
-
-        // Load product list when page loads
-        document.addEventListener('DOMContentLoaded', loadProductList);
-
-        // Modal Toggle
+        // DOM Elements
         const newSaleBtn = document.getElementById('newSaleBtn');
         const newSaleModal = document.getElementById('newSaleModal');
         const cancelSaleBtn = document.getElementById('cancelSaleBtn');
+        const productSelect = document.getElementById('productSelect');
+        const quantityInput = document.getElementById('quantityInput');
+        const unitPriceInput = document.getElementById('unitPriceInput');
+        const totalValueInput = document.getElementById('totalValueInput');
+        const newSaleForm = document.getElementById('newSaleForm');
+        const salesTableBody = document.getElementById('salesTableBody');
 
+        // Fetch Inventory Products
+        async function fetchInventoryProducts() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/inventory');
+                const data = await response.json();
+                
+                productSelect.innerHTML = '<option value="">Select Product</option>';
+                
+                data.inventory.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.product;
+                    option.setAttribute('data-price', product.unit_price);
+                    option.setAttribute('data-inventory', product.in_stock);
+                    option.textContent = `${product.product} - ₦${product.unit_price.toLocaleString()} (${product.in_stock} in stock)`;
+                    productSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching inventory:', error);
+                alert('Failed to load product inventory');
+            }
+        }
+
+        // Update Sales Summary
+        async function updateSalesSummary() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/sales-summary');
+                const data = await response.json();
+                
+                // Update today's sales
+                const todaySalesElement = document.querySelector('.bg-blue-100 .text-2xl');
+                todaySalesElement.textContent = `₦${data.today_sales.total_sales.toLocaleString()}`;
+                
+                // Update monthly sales
+                const monthlySalesElement = document.querySelector('.bg-green-100 .text-2xl');
+                monthlySalesElement.textContent = `₦${data.month_sales.total_sales.toLocaleString()}`;
+                
+                // Update best-selling product
+                const bestSellingElement = document.querySelector('.bg-purple-100 .text-2xl');
+                if (data.best_selling_product) {
+                    bestSellingElement.textContent = data.best_selling_product._id;
+                } else {
+                    bestSellingElement.textContent = 'No Sales';
+                }
+            } catch (error) {
+                console.error('Error updating sales summary:', error);
+            }
+        }
+
+       // Modify fetchSalesHistory to use sale_id from backend
+       async function fetchSalesHistory() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/monthly-revenue');
+                const data = await response.json();
+                
+                salesTableBody.innerHTML = ''; // Clear existing rows
+                
+                // Populate sales table (adjust based on actual response structure)
+                data.forEach(sale => {
+                    const newRow = document.createElement('tr');
+                    newRow.classList.add('border-b', 'hover:bg-blue-50', 'transition');
+                    newRow.innerHTML = `
+                        <td class="py-3 px-4">${sale.sale_id || '#SA' + Math.floor(Math.random() * 1000)}</td>
+                        <td class="py-3 px-4">${sale.product}</td>
+                        <td class="py-3 px-4">${sale.quantity}</td>
+                        <td class="py-3 px-4">₦${sale.unit_price.toLocaleString()}</td>
+                        <td class="py-3 px-4">₦${sale.total_price.toLocaleString()}</td>
+                        <td class="py-3 px-4">${new Date(sale.date).toLocaleDateString()}</td>
+                        <td class="py-3 px-4">
+                            <div class="flex space-x-2">
+                                <button class="text-blue-500 hover:text-blue-700">
+                                    <i data-feather="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    salesTableBody.prepend(newRow);
+                });
+                
+                feather.replace();
+            } catch (error) {
+                console.error('Error fetching sales history:', error);
+            }
+        }
+
+        // Product Selection Event Listener
+        productSelect.addEventListener('change', (e) => {
+            const selectedOption = e.target.selectedOptions[0];
+            const price = selectedOption.getAttribute('data-price');
+            const inventory = selectedOption.getAttribute('data-inventory');
+            
+            unitPriceInput.value = `₦${parseFloat(price).toLocaleString()}`;
+            quantityInput.max = inventory;
+            quantityInput.value = ''; // Reset quantity
+            totalValueInput.value = ''; // Reset total value
+        });
+
+        // Quantity Input Event Listener
+        quantityInput.addEventListener('input', () => {
+            if (!productSelect.value) return;
+            
+            const price = parseFloat(productSelect.selectedOptions[0].getAttribute('data-price'));
+            const quantity = parseInt(quantityInput.value);
+            
+            if (quantity > 0) {
+                const totalValue = price * quantity;
+                totalValueInput.value = `₦${totalValue.toLocaleString()}`;
+            } else {
+                totalValueInput.value = '';
+            }
+        });
+
+         // Function to generate unique sale ID
+         function generateSaleId() {
+            const prefix = 'SA';
+            const randomNumber = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+            return `#${prefix}${randomNumber}`;
+        }
+
+        // Function to convert to Decimal (handles floating-point precision)
+        function toDecimal(value) {
+            return parseFloat(value.toFixed(2));
+        }
+
+        // Form Submission Event Listener
+        newSaleForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const product = productSelect.value;
+            const quantity = parseInt(quantityInput.value);
+            const unitPrice = toDecimal(parseFloat(productSelect.selectedOptions[0].getAttribute('data-price')));
+            const totalValue = toDecimal(unitPrice * quantity);
+            
+            
+            // Generate unique sale ID
+            const saleId = generateSaleId();
+            
+            try {
+                const response = await fetch('http://127.0.0.1:8000/create-sale', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        sale_id: saleId,  // Include sale ID
+                        product: product,
+                        quantity: quantity,
+                        unit_price: unitPrice,
+                        total_value: totalValue,
+                        date: new Date().toISOString()  // Send date in ISO format
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Sale creation failed');
+                }
+
+                // Close modal and reset form
+                newSaleModal.classList.add('hidden');
+                newSaleForm.reset();
+
+                // Refresh various components
+                await Promise.all([
+                    fetchInventoryProducts(),
+                    updateSalesSummary(),
+                    fetchSalesHistory()
+                ]);
+
+                alert(`Sale completed successfully! Sale ID: ${saleId}`);
+            } catch (error) {
+                console.error('Error creating sale:', error);
+                alert(error.message);
+            }
+        });
+
+         // Update quantity calculation to use toDecimal
+         quantityInput.addEventListener('input', () => {
+            if (!productSelect.value) return;
+            
+            const price = toDecimal(parseFloat(productSelect.selectedOptions[0].getAttribute('data-price')));
+            const quantity = parseInt(quantityInput.value);
+            
+            if (quantity > 0) {
+                const totalValue = toDecimal(price * quantity);
+                totalValueInput.value = `₦${totalValue.toLocaleString()}`;
+            } else {
+                totalValueInput.value = '';
+            }
+        });
+
+        // Modal Toggle Events
         newSaleBtn.addEventListener('click', () => {
             newSaleModal.classList.remove('hidden');
         });
 
         cancelSaleBtn.addEventListener('click', () => {
             newSaleModal.classList.add('hidden');
-        });
-
-        // Dynamic Pricing and Calculation
-        const productSelect = document.getElementById('productSelect');
-        const quantityInput = document.getElementById('quantityInput');
-        const unitPriceInput = document.getElementById('unitPriceInput');
-        const totalValueInput = document.getElementById('totalValueInput');
-        const newSaleForm = document.getElementById('newSaleForm');
-
-        productSelect.addEventListener('change', (e) => {
-            const selectedOption = e.target.selectedOptions[0];
-            const price = selectedOption.getAttribute('data-price');
-            const inventory = selectedOption.getAttribute('data-inventory');
-            
-            unitPriceInput.value = `₦${parseInt(price).toLocaleString()}`;
-            quantityInput.max = inventory;
-        });
-
-        quantityInput.addEventListener('input', () => {
-            const price = productSelect.selectedOptions[0].getAttribute('data-price');
-            const quantity = quantityInput.value;
-            
-            const totalValue = price * quantity;
-            totalValueInput.value = `₦${totalValue.toLocaleString()}`;
-        });
-
-        newSaleForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const product = productSelect.value;
-            const quantity = parseInt(quantityInput.value);
-            const totalValue = parseFloat(totalValueInput.value.replace('₦', '').replace(',', ''));
-            
-            // Create a new sale row
-            const salesTableBody = document.getElementById('salesTableBody');
-            const newRow = document.createElement('tr');
-            newRow.classList.add('border-b', 'hover:bg-blue-50', 'transition');
-            newRow.innerHTML = `
-                <td class="py-3 px-4">#SA${Math.floor(Math.random() * 1000)}</td>
-                <td class="py-3 px-4">${productSelect.selectedOptions[0].text.split(' - ')[0]}</td>
-                <td class="py-3 px-4">${quantity}</td>
-                <td class="py-3 px-4">₦${parseInt(productSelect.selectedOptions[0].getAttribute('data-price')).toLocaleString()}</td>
-                <td class="py-3 px-4">₦${totalValue.toLocaleString()}</td>
-                <td class="py-3 px-4">${new Date().toLocaleDateString()}</td>
-                <td class="py-3 px-4">
-                    <div class="flex space-x-2">
-                        <button class="text-blue-500 hover:text-blue-700">
-                            <i data-feather="eye" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            salesTableBody.prepend(newRow);
-            feather.replace();
-
-            // Close modal
-            newSaleModal.classList.add('hidden');
-
-            // Reset form
             newSaleForm.reset();
+        });
 
-            // In a real system, this would trigger backend updates to:
-            // 1. Reduce inventory
-            // 2. Update sales totals
-            // 3. Sync with dashboard metrics
+        // Initial Page Load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Promise.all([
+                fetchInventoryProducts(),
+                updateSalesSummary(),
+                fetchSalesHistory()
+            ]);
         });
     </script>
 </body>

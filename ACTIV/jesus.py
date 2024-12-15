@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import random
 
-def generate_pharmacy_sales(num_records=500000, output_path='omo_sales_data.xlsx'):
+def generate_pharmacy_sales(num_records=500000, output_path='sales_data.xlsx'):
     # Set random seed for reproducibility
     np.random.seed(42)
     random.seed(42)
@@ -168,36 +168,35 @@ def generate_pharmacy_sales(num_records=500000, output_path='omo_sales_data.xlsx
         'Thermometer': ['Braun', 'Vicks']
     }
 
-    # Expand product list to include variants
+    # Expand product list to include variants (kept the same as in the original script)
     expanded_products = []
     for category, products_list in products.items():
         for product_info in products_list:
             product_name, base_cost, min_price, max_price, margin_range = product_info
 
-            # Add base product
-            expanded_products.append((product_name, base_cost, min_price, max_price, margin_range))
+            # Add base product with its category
+            expanded_products.append((product_name, base_cost, min_price, max_price, margin_range, category))
 
             # Add brand variants
-            # Add brand or variant-specific products
             if category == "OTC Medication" and product_name in otc_brands:
                 expanded_products.extend([
-                    (f"{product_name} ({brand})", base_cost, min_price, max_price, margin_range)
+                    (f"{product_name} ({brand})", base_cost, min_price, max_price, margin_range, category)
                     for brand in otc_brands[product_name]
                 ])
             elif category == "Personal Care" and product_name in personal_care_brands:
                 expanded_products.extend([
-                    (f"{product_name} ({brand})", base_cost, min_price, max_price, margin_range)
+                    (f"{product_name} ({brand})", base_cost, min_price, max_price, margin_range, category)
                     for brand in personal_care_brands[product_name]
                 ])
             elif category == "Health Supplies" and product_name in health_supplies_brands:
                 expanded_products.extend([
-                    (f"{product_name} ({brand})", base_cost, min_price, max_price, margin_range)
+                    (f"{product_name} ({brand})", base_cost, min_price, max_price, margin_range, category)
                     for brand in health_supplies_brands[product_name]
                 ])
             elif category == "Prescription":
                 weights = ['10mg', '25mg', '50mg', '100mg']
                 expanded_products.extend([
-                    (f"{product_name.split()[0]} {weight}", base_cost, min_price, max_price, margin_range)
+                    (f"{product_name.split()[0]} {weight}", base_cost, min_price, max_price, margin_range, category)
                     for weight in weights
                 ])
 
@@ -205,8 +204,9 @@ def generate_pharmacy_sales(num_records=500000, output_path='omo_sales_data.xlsx
     # Generate sales data
     data = []
     for date in dates:
+        # Unpack now includes category
         product_info = random.choice(expanded_products)
-        product_name, base_cost, min_price, max_price, margin_range = product_info
+        product_name, base_cost, min_price, max_price, margin_range, category = product_info
 
         # Generate quantity
         quantity = random.choice([1, 2, 3])
@@ -227,6 +227,9 @@ def generate_pharmacy_sales(num_records=500000, output_path='omo_sales_data.xlsx
         customer_id = f"CUST{random.randint(1, 50000):05d}"
         transaction_id = f"TXN{len(data):06d}"
 
+        # Generate in_stock value
+        in_stock = random.randint(40, 200)
+
         data.append({
             'transaction_id': transaction_id,
             'date': date,
@@ -239,7 +242,8 @@ def generate_pharmacy_sales(num_records=500000, output_path='omo_sales_data.xlsx
             'total_cost': total_cost,
             'gross_profit': gross_profit,
             'profit_margin': profit_margin,
-            'payment_method': payment_method
+            'payment_method': payment_method,
+            'in_stock': in_stock
         })
 
     # Convert to DataFrame
