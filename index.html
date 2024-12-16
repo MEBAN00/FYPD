@@ -39,8 +39,8 @@
                         <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
                             Welcome back, John Doe! 👋
                         </h2>
-                        <div class="text-sm text-gray-500">
-                            Today, December 8, 2024
+                        <div id="currentDate" class="text-sm text-gray-500">
+                            <!-- Current date will be dynamically inserted here -->
                         </div>
                     </div>
                     <p class="text-gray-600">
@@ -51,24 +51,21 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 text-center hover:scale-105 transform transition duration-300">
                         <div class="text-sm text-gray-500 mb-2">Total Sales (Today)</div>
-                        <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                            ₦75,000
+                        <div id="todaySales" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                            ₦0
                         </div>
-                        <div class="text-green-500 text-sm mt-2">+12.5% ↑</div>
                     </div>
                     <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 text-center hover:scale-105 transform transition duration-300">
                         <div class="text-sm text-gray-500 mb-2">Total Transactions</div>
-                        <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                            25
+                        <div id="totalTransactions" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                            0
                         </div>
-                        <div class="text-green-500 text-sm mt-2">+8% ↑</div>
                     </div>
                     <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 text-center hover:scale-105 transform transition duration-300">
                         <div class="text-sm text-gray-500 mb-2">Total Revenue (Month)</div>
-                        <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                            ₦1,200,000
+                        <div id="monthRevenue" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                            ₦0
                         </div>
-                        <div class="text-green-500 text-sm mt-2">+15.3% ↑</div>
                     </div>
                 </div>
 
@@ -85,28 +82,8 @@
                     <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
                         Recent Activity
                     </h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center border-b pb-2">
-                            <div>
-                                <div class="font-semibold">New Sale</div>
-                                <div class="text-sm text-gray-500">Nike Sneakers</div>
-                            </div>
-                            <div class="text-green-600">+₦25,000</div>
-                        </div>
-                        <div class="flex justify-between items-center border-b pb-2">
-                            <div>
-                                <div class="font-semibold">Refund Processed</div>
-                                <div class="text-sm text-gray-500">Adidas Hoodie</div>
-                            </div>
-                            <div class="text-red-600">-₦5,000</div>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <div class="font-semibold">Inventory Restock</div>
-                                <div class="text-sm text-gray-500">Summer Collection</div>
-                            </div>
-                            <div class="text-blue-600">₦100,000</div>
-                        </div>
+                    <div id="recentActivityList" class="space-y-4">
+                        <!-- Recent sales will be dynamically inserted here -->
                     </div>
                 </div>
             </div>
@@ -114,58 +91,132 @@
     </div>
 
     <script>
+        // Function to format currency
+        function formatCurrency(amount) {
+            return '₦' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Function to update current date
+        function updateCurrentDate() {
+            const currentDateElement = document.getElementById('currentDate');
+            const today = new Date();
+            const formattedDate = today.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            currentDateElement.textContent = formattedDate;
+        }
+
         // Function to fetch and render monthly revenue
         async function fetchMonthlyRevenue() {
-        try {
-            const response = await fetch('http://127.0.0.1:8000/monthly-revenue');
-            
-            // Check if the response is OK
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
+            try {
+                const response = await fetch('http://127.0.0.1:8000/monthly-revenue');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
 
-            // Create chart
-            const ctx = document.getElementById('revenueChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.chart_labels,
-                    datasets: [{
-                        label: 'Monthly Revenue',
-                        data: data.chart_data,
-                        borderColor: 'rgba(59, 130, 246, 0.8)',
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+                const ctx = document.getElementById('revenueChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.chart_labels,
+                        datasets: [{
+                            label: 'Monthly Revenue',
+                            data: data.chart_data,
+                            borderColor: 'rgba(59, 130, 246, 0.8)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            tension: 0.4
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '₦' + value.toLocaleString();
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return formatCurrency(value);
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
-        } catch (error) {
-            console.error('Error fetching monthly revenue:', error);
+                });
+            } catch (error) {
+                console.error('Error fetching monthly revenue:', error);
+            }
         }
-    }
 
-    // Fetch revenue data when page loads
-    window.onload = fetchMonthlyRevenue;
+        // Function to fetch and render sales summary
+        async function fetchSalesSummary() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/sales-summary');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+
+                // Update dashboard metrics
+                document.getElementById('todaySales').textContent = formatCurrency(data.today_sales.total_sales);
+                document.getElementById('totalTransactions').textContent = data.today_sales.total_transactions;
+                document.getElementById('monthRevenue').textContent = formatCurrency(data.month_sales.total_sales);
+            } catch (error) {
+                console.error('Error fetching sales summary:', error);
+            }
+        }
+
+        // Function to fetch recent sales
+        async function fetchRecentSales() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/sales');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const sales = await response.json();
+                const recentActivityList = document.getElementById('recentActivityList');
+                
+                // Clear previous activities
+                recentActivityList.innerHTML = '';
+
+                // Display top 3 recent sales/activities
+                sales.slice(0, 3).forEach(sale => {
+                    const activityDiv = document.createElement('div');
+                    activityDiv.className = 'flex justify-between items-center border-b pb-2';
+                    activityDiv.innerHTML = `
+                        <div>
+                            <div class="font-semibold">Sale</div>
+                            <div class="text-sm text-gray-500">${sale.product}</div>
+                        </div>
+                        <div class="text-green-600">${formatCurrency(sale.total_value)}</div>
+                    `;
+                    recentActivityList.appendChild(activityDiv);
+                });
+            } catch (error) {
+                console.error('Error fetching recent sales:', error);
+            }
+        }
+
+        // Call functions when page loads
+        window.onload = () => {
+            updateCurrentDate();
+            fetchMonthlyRevenue();
+            fetchSalesSummary();
+            fetchRecentSales();
+        };
     </script>
 </body>
 </html>

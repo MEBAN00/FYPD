@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from decimal import Decimal
 import pandas as pd
@@ -8,6 +9,9 @@ import pickle
 import os
 from dotenv import load_dotenv
 import logging
+from bson import ObjectId
+import json
+from bson.decimal128 import Decimal128
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 
@@ -21,7 +25,7 @@ DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
 
 # MongoDB Connection
-MONGO_URI = "mongodb+srv://{DB_USER}:{DB_PASSWORD}@fypd.l17lq.mongodb.net/"  # Replace with your actual MongoDB connection string
+MONGO_URI = f"mongodb+srv://{DB_USER}:{DB_PASSWORD}@fypd.l17lq.mongodb.net/{DB_NAME}?retryWrites=true&w=majority"  # Replace with your actual MongoDB connection string
 
 # Create MongoDB client
 mongo_client = AsyncIOMotorClient(MONGO_URI)
@@ -68,6 +72,16 @@ class SaleInput(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+class MongoJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)
+        elif isinstance(o, Decimal128):
+            return float(o.to_decimal())  # Convert Decimal128 to float
+        elif isinstance(o, datetime):
+            return o.isoformat()  # Convert datetime to ISO 8601 string
+        return super().default(o)
 
 @app.post("/predict")
 async def predict(new_data: PredictionInput):
@@ -306,29 +320,36 @@ async def create_sale(sale_data: SaleInput):
                     "sale_id": sale_data.sale_id,
                     "product": sale_data.product,
                     "quantity": sale_data.quantity,
-                    "unit_price": sale_data.unit_price,
-                    "total_value": sale_data.total_value,  # Changed from total_price
+                    "unit_price": float(sale_data.unit_price),
+                    "total_value": float(sale_data.total_value),  # Changed from total_price
                     "date": sale_data.date
                 }
                 
                 result = await sales_collection.insert_one(sale_record)
+
+                # When fetching the updated inventory, convert ObjectId to string
+                updated_inventory = await inventory_collection.find_one({"product": sale_data.product})
+
+                # Use json.loads and json.dumps with the custom encoder
+                serialized_inventory = json.loads(json.dumps(updated_inventory, cls=MongoJSONEncoder))
                 
                 return JSONResponse(content={
                     "message": "Sale created successfully",
                     "sale_id": sale_data.sale_id,
-                    "updated_inventory": await inventory_collection.find_one({"product": sale_data.product})
+                    "updated_inventory": serialized_inventory
                 })
+
     
     except Exception as e:
         logging.error(f"Error creating sale: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating sale: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating sale: {str(e)}")@app.get("/sales-summary")
+
 @app.get("/sales-summary")
 async def get_sales_summary():
     try:
         # Get current date
         current_date = datetime.now()
         today = current_date.date()
-        first_day_of_month = today.replace(day=1)
         
         # Sales collection
         sales_collection = db["FYPDS"]
@@ -348,26 +369,33 @@ async def get_sales_summary():
             {
                 "$group": {
                     "_id": None,
-                    "total_sales": {"$sum": "$total_price"},
-                    "total_transactions": {"$sum": 1},
-                    "top_products": {
-                        "$push": {
-                            "product": "$product",
-                            "quantity": "$quantity",
-                            "total_price": "$total_price"
-                        }
-                    }
+                    "total_sales": {"$sum": "$total_value"},
+                    "total_transactions": {"$sum": 1}
                 }
             }
         ]
         
-        # Aggregate monthly sales
+        # Find best-selling product of all time
+        best_selling_pipeline = [
+            {
+                "$group": {
+                    "_id": "$product",
+                    "total_quantity": {"$sum": "$quantity"},
+                    "total_revenue": {"$sum": "$total_value"}
+                }
+            },
+            {"$sort": {"total_quantity": -1}},
+            {"$limit": 1}
+        ]
+        
+        # Aggregate this month's sales
+        month_start = today.replace(day=1)
         month_sales_pipeline = [
             {
                 "$match": {
                     "$expr": {
                         "$and": [
-                            {"$gte": ["$date", first_day_of_month]},
+                            {"$gte": ["$date", datetime.combine(month_start, datetime.min.time())]},
                             {"$lte": ["$date", current_date]}
                         ]
                     }
@@ -376,30 +404,10 @@ async def get_sales_summary():
             {
                 "$group": {
                     "_id": None,
-                    "total_sales": {"$sum": "$total_price"},
-                    "total_transactions": {"$sum": 1},
-                    "top_products": {
-                        "$push": {
-                            "product": "$product",
-                            "quantity": "$quantity",
-                            "total_price": "$total_price"
-                        }
-                    }
+                    "total_sales": {"$sum": "$total_value"},
+                    "total_transactions": {"$sum": 1}
                 }
             }
-        ]
-        
-        # Find best-selling product
-        best_selling_pipeline = [
-            {
-                "$group": {
-                    "_id": "$product",
-                    "total_quantity": {"$sum": "$quantity"},
-                    "total_revenue": {"$sum": "$total_price"}
-                }
-            },
-            {"$sort": {"total_quantity": -1}},
-            {"$limit": 1}
         ]
         
         # Execute aggregations
@@ -410,16 +418,18 @@ async def get_sales_summary():
         # Prepare response
         response = {
             "today_sales": {
-                "total_sales": today_sales[0]['total_sales'] if today_sales else 0,
-                "total_transactions": today_sales[0]['total_transactions'] if today_sales else 0,
-                "top_products": today_sales[0]['top_products'] if today_sales else []
+                "total_sales": float(today_sales[0]['total_sales']) if today_sales else 0,
+                "total_transactions": today_sales[0]['total_transactions'] if today_sales else 0
             },
             "month_sales": {
-                "total_sales": month_sales[0]['total_sales'] if month_sales else 0,
-                "total_transactions": month_sales[0]['total_transactions'] if month_sales else 0,
-                "top_products": month_sales[0]['top_products'] if month_sales else []
+                "total_sales": float(month_sales[0]['total_sales']) if month_sales else 0,
+                "total_transactions": month_sales[0]['total_transactions'] if month_sales else 0
             },
-            "best_selling_product": best_selling[0] if best_selling else None
+            "best_selling_product": {
+                "product": best_selling[0]['_id'],
+                "total_quantity": best_selling[0]['total_quantity'],
+                "total_revenue": float(best_selling[0]['total_revenue'])
+            } if best_selling else None
         }
         
         return JSONResponse(content=response)
@@ -427,6 +437,93 @@ async def get_sales_summary():
     except Exception as e:
         logging.error(f"Error fetching sales summary: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching sales summary")
+    
+@app.get("/sales")
+async def get_sales():
+    try:
+        # Sales collection
+        sales_collection = db["FYPDS"]
+        
+        # Fetch sales, sorted by date in descending order
+        sales_pipeline = [
+            {"$sort": {"date": -1}},  # Sort by date, most recent first
+            {"$limit": 100}  # Limit to last 100 sales to prevent overwhelming the frontend
+        ]
+        
+        # Execute aggregation
+        sales = await sales_collection.aggregate(sales_pipeline).to_list(length=None)
+        
+        # Convert ObjectId, Decimal128, and datetime to JSON-serializable format
+        serialized_sales = json.loads(json.dumps(sales, cls=MongoJSONEncoder))
+        
+        return JSONResponse(content=serialized_sales)
+    
+    except Exception as e:
+        logging.error(f"Error fetching sales: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error fetching sales data")
+    
+# Add these new endpoints to your backend.py file
+
+@app.put("/update-product/{product_id}")
+async def update_product(product_id: str, product_data: dict):
+    try:
+        # Convert product_id to ObjectId if necessary
+        inventory_collection = db["FYPDI"]
+        
+        # Validate input data
+        update_fields = {}
+        if 'product' in product_data:
+            update_fields['product'] = product_data['product']
+        if 'category' in product_data:
+            update_fields['category'] = product_data['category']
+        if 'in_stock' in product_data:
+            update_fields['in_stock'] = int(product_data['in_stock'])
+        if 'unit_price' in product_data:
+            update_fields['unit_price'] = float(product_data['unit_price'])
+        
+        if not update_fields:
+            raise HTTPException(status_code=400, detail="No update fields provided")
+        
+        # Perform the update
+        result = await inventory_collection.update_one(
+            {"product": product_id},  # Use product name as identifier
+            {"$set": update_fields}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Fetch the updated product to return
+        updated_product = await inventory_collection.find_one({"product": product_id})
+        
+        # Convert ObjectId, Decimal128 to JSON-serializable format
+        serialized_product = json.loads(json.dumps(updated_product, cls=MongoJSONEncoder))
+        
+        return JSONResponse(content=serialized_product)
+    
+    except Exception as e:
+        logging.error(f"Error updating product: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating product: {str(e)}")
+
+@app.delete("/delete-product/{product_name}")
+async def delete_product(product_name: str):
+    try:
+        inventory_collection = db["FYPDI"]
+        
+        # Delete the product
+        result = await inventory_collection.delete_one({"product": product_name})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        return JSONResponse(content={
+            "message": "Product deleted successfully",
+            "product_name": product_name
+        })
+    
+    except Exception as e:
+        logging.error(f"Error deleting product: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting product: {str(e)}")
 # Custom exception handler for validation errors
 @app.exception_handler(HTTPException)
 async def validation_exception_handler(request, exc):
