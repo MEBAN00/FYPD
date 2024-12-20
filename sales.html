@@ -215,6 +215,9 @@
             salesTableBody.appendChild(newRow);
             feather.replace();
 
+            // Re-fetch and update sales data
+            await loadSales();
+
             // Update summary data
             const summaryResponse = await fetch("http://127.0.0.1:8000/sales-summary");
             const summaryData = await summaryResponse.json();

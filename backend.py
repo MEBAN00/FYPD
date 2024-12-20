@@ -349,20 +349,23 @@ async def get_sales_summary():
     try:
         # Get current date
         current_date = datetime.now()
-        today = current_date.date()
+        today_start = datetime.combine(current_date.date(), datetime.min.time())
+        today_end = datetime.combine(current_date.date(), datetime.max.time())
+        
+        # Calculate month start and end
+        month_start = datetime.combine(current_date.replace(day=1), datetime.min.time())
+        month_end = datetime.combine(current_date, datetime.max.time())
         
         # Sales collection
         sales_collection = db["FYPDS"]
         
-        # Aggregate today's sales
+        # Aggregate today's sales with proper date comparison
         today_sales_pipeline = [
             {
                 "$match": {
-                    "$expr": {
-                        "$eq": [
-                            {"$dateToString": {"format": "%Y-%m-%d", "date": "$date"}},
-                            today.strftime("%Y-%m-%d")
-                        ]
+                    "date": {
+                        "$gte": today_start,
+                        "$lte": today_end
                     }
                 }
             },
@@ -389,15 +392,12 @@ async def get_sales_summary():
         ]
         
         # Aggregate this month's sales
-        month_start = today.replace(day=1)
         month_sales_pipeline = [
             {
                 "$match": {
-                    "$expr": {
-                        "$and": [
-                            {"$gte": ["$date", datetime.combine(month_start, datetime.min.time())]},
-                            {"$lte": ["$date", current_date]}
-                        ]
+                    "date": {
+                        "$gte": month_start,
+                        "$lte": month_end
                     }
                 }
             },
