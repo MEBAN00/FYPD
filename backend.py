@@ -256,7 +256,7 @@ async def get_inventory():
         logging.error(f"Error fetching inventory: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching inventory data")
 
-    
+
 @app.post("/add-product")
 async def add_product(product_data: dict):
     try:
@@ -283,12 +283,11 @@ async def add_product(product_data: dict):
             "message": "Product added successfully",
             "product_id": str(result.inserted_id)
         })
-    
+
     except Exception as e:
         logging.error(f"Error adding product: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error adding product: {str(e)}")
     
-
 @app.post("/create-sale")
 async def create_sale(sale_data: SaleInput):
     try:
@@ -339,7 +338,6 @@ async def create_sale(sale_data: SaleInput):
                     "updated_inventory": serialized_inventory
                 })
 
-    
     except Exception as e:
         logging.error(f"Error creating sale: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error creating sale: {str(e)}")@app.get("/sales-summary")
@@ -516,6 +514,7 @@ async def delete_product(product_name: str):
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Product not found")
         
+                  
         return JSONResponse(content={
             "message": "Product deleted successfully",
             "product_name": product_name
@@ -524,6 +523,99 @@ async def delete_product(product_name: str):
     except Exception as e:
         logging.error(f"Error deleting product: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting product: {str(e)}")
+
+@app.get("/inventory-turnover")
+async def get_inventory_turnover():
+    try:
+        # Get current date
+        current_date = datetime.now()
+        
+        # Calculate year start
+        year_start = datetime(current_date.year, 1, 1)
+        
+        # Get sales collection and inventory collection
+        sales_collection = db["FYPDS"]
+        inventory_collection = db["FYPDI"]
+        
+        # Calculate sales for each product
+        sales_pipeline = [
+            {
+                "$match": {
+                    "date": {
+                        "$gte": year_start,
+                        "$lte": current_date
+                    }
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$product",
+                    "total_quantity_sold": {"$sum": "$quantity"},
+                    "total_sales_value": {"$sum": "$total_value"}
+                }
+            }
+        ]
+        
+        sales_data = await sales_collection.aggregate(sales_pipeline).to_list(length=None)
+        
+        # Get current inventory levels
+        inventory = await inventory_collection.find().to_list(length=None)
+        
+        # Calculate turnover metrics
+        turnover_data = []
+        for product in inventory:
+            product_sales = next((item for item in sales_data if item["_id"] == product["product"]), None)
+            
+            if product_sales:
+                # Calculate months elapsed in current year
+                months_elapsed = (current_date - year_start).days / 30.44  # Average days per month
+                
+                # Calculate annual turnover rate (annualized based on current year data)
+                annual_turnover_rate = (product_sales["total_quantity_sold"] / product["in_stock"]) * (12 / months_elapsed)
+                
+                # Calculate days inventory outstanding (DIO)
+                if product_sales["total_quantity_sold"] > 0:
+                    daily_sales = product_sales["total_quantity_sold"] / ((current_date - year_start).days)
+                    days_inventory = product["in_stock"] / daily_sales if daily_sales > 0 else float('inf')
+                else:
+                    days_inventory = float('inf')
+                
+                turnover_data.append({
+                    "product": product["product"],
+                    "current_stock": product["in_stock"],
+                    "quantity_sold": product_sales["total_quantity_sold"],
+                    "turnover_rate": round(annual_turnover_rate, 2),
+                    "days_inventory": round(days_inventory, 1),
+                    "sales_value": float(product_sales["total_sales_value"])
+                })
+        
+        # Sort by turnover rate descending
+        turnover_data.sort(key=lambda x: x["turnover_rate"], reverse=True)
+        
+        # Calculate overall metrics
+        total_inventory = sum(item["current_stock"] for item in turnover_data)
+        total_sales = sum(item["quantity_sold"] for item in turnover_data)
+        
+        if total_inventory > 0:
+            overall_turnover = (total_sales / total_inventory) * (12 / months_elapsed)
+        else:
+            overall_turnover = 0
+        
+        response = {
+            "turnover_data": turnover_data,
+            "overall_metrics": {
+                "overall_turnover_rate": round(overall_turnover, 2),
+                "total_inventory": total_inventory,
+                "total_sales": total_sales
+            }
+        }
+        
+        return JSONResponse(content=response)
+    
+    except Exception as e:
+        logging.error(f"Error calculating inventory turnover: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error calculating inventory turnover")
+    
 # Custom exception handler for validation errors
 @app.exception_handler(HTTPException)
 async def validation_exception_handler(request, exc):
