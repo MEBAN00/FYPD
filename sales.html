@@ -17,7 +17,7 @@
                 </h1>
             </div>
             <div class="flex space-x-4">
-                <a href="index.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
+                <a href="dashboard.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
                     Dashboard
                 </a>
                 <a href="inventory.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
@@ -26,6 +26,8 @@
                 <a href="prediction.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
                     Prediction
                 </a>
+                <button id="logoutButton" class="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition duration-300 ease-in-out" onclick="handleLogout()"> Logout 
+                </button>
             </div>
         </nav>
 
@@ -124,48 +126,63 @@
     </div>
 
     <script>
-        // Initialize Feather Icons
-        feather.replace();
-    
-        // DOM Elements
-        const newSaleBtn = document.getElementById('newSaleBtn');
-        const newSaleModal = document.getElementById('newSaleModal');
-        const cancelSaleBtn = document.getElementById('cancelSaleBtn');
-        const productSelect = document.getElementById('productSelect');
-        const quantityInput = document.getElementById('quantityInput');
-        const unitPriceInput = document.getElementById('unitPriceInput');
-        const totalValueInput = document.getElementById('totalValueInput');
-        const newSaleForm = document.getElementById('newSaleForm');
-        const salesTableBody = document.getElementById('salesTableBody');
-    
-        // Product Selection Event Listener
-        productSelect.addEventListener('change', (e) => {
-            const selectedOption = e.target.selectedOptions[0];
-            const price = selectedOption.getAttribute('data-price');
-            const inventory = selectedOption.getAttribute('data-inventory');
-    
-            unitPriceInput.value = `₦${parseFloat(price).toLocaleString()}`;
-            quantityInput.max = inventory;
-            quantityInput.value = ''; // Reset quantity
-            totalValueInput.value = ''; // Reset total value
-        });
-    
-        // Quantity Input Event Listener
-        quantityInput.addEventListener('input', () => {
-            if (!productSelect.value) return;
-    
-            const price = parseFloat(productSelect.selectedOptions[0].getAttribute('data-price'));
-            const quantity = parseInt(quantityInput.value);
-    
-            if (quantity > 0) {
-                const totalValue = price * quantity;
-                totalValueInput.value = `₦${totalValue.toLocaleString()}`;
-            } else {
-                totalValueInput.value = '';
-            }
-        });
-    
-        // Form Submission Event Listener
+       document.addEventListener('DOMContentLoaded', () => {
+    console.log('Page loaded. Setting up event listeners.');
+
+    // Initialize Feather Icons
+    feather.replace();
+
+    // DOM Elements
+    const newSaleBtn = document.getElementById('newSaleBtn');
+    const newSaleModal = document.getElementById('newSaleModal');
+    const cancelSaleBtn = document.getElementById('cancelSaleBtn');
+    const productSelect = document.getElementById('productSelect');
+    const quantityInput = document.getElementById('quantityInput');
+    const unitPriceInput = document.getElementById('unitPriceInput');
+    const totalValueInput = document.getElementById('totalValueInput');
+    const newSaleForm = document.getElementById('newSaleForm');
+    const salesTableBody = document.getElementById('salesTableBody');
+
+    // Helper function to get authorization headers
+    const getAuthHeaders = () => ({
+        'Authorization': `Bearer ${userData.access_token}`,
+        'Content-Type': 'application/json'
+    });
+
+    // Function to handle unauthorized responses
+    const handleUnauthorized = () => {
+        localStorage.removeItem('userData');
+        window.location.href = 'index.html';
+    };
+
+    // Product Selection Event Listener
+    productSelect.addEventListener('change', (e) => {
+        const selectedOption = e.target.selectedOptions[0];
+        const price = selectedOption.getAttribute('data-price');
+        const inventory = selectedOption.getAttribute('data-inventory');
+
+        unitPriceInput.value = `₦${parseFloat(price).toLocaleString()}`;
+        quantityInput.max = inventory;
+        quantityInput.value = ''; // Reset quantity
+        totalValueInput.value = ''; // Reset total value
+    });
+
+    // Quantity Input Event Listener
+    quantityInput.addEventListener('input', () => {
+        if (!productSelect.value) return;
+
+        const price = parseFloat(productSelect.selectedOptions[0].getAttribute('data-price'));
+        const quantity = parseInt(quantityInput.value);
+
+        if (quantity > 0) {
+            const totalValue = price * quantity;
+            totalValueInput.value = `₦${totalValue.toLocaleString()}`;
+        } else {
+            totalValueInput.value = '';
+        }
+    });
+
+    // Form Submission Event Listener
     newSaleForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -186,9 +203,14 @@
         try {
             const response = await fetch("http://127.0.0.1:8000/create-sale", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(saleData)
             });
+
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
 
             if (!response.ok) {
                 throw new Error("Failed to create sale");
@@ -217,12 +239,7 @@
 
             // Re-fetch and update sales data
             await loadSales();
-
-            // Update summary data
-            const summaryResponse = await fetch("http://127.0.0.1:8000/sales-summary");
-            const summaryData = await summaryResponse.json();
-            document.querySelector('.bg-blue-100 .text-2xl').textContent = `₦${summaryData.today_sales.total_sales.toLocaleString()}`;
-            document.querySelector('.bg-green-100 .text-2xl').textContent = `₦${summaryData.month_sales.total_sales.toLocaleString()}`;
+            await loadSummaryData();
 
             // Hide the modal and reset the form
             newSaleModal.classList.add('hidden');
@@ -231,87 +248,140 @@
             console.error("Error:", error);
         }
     });
-    
-        // Modal Toggle Events
-        newSaleBtn.addEventListener('click', () => {
-            newSaleModal.classList.remove('hidden');
-        });
-    
-        cancelSaleBtn.addEventListener('click', () => {
-            newSaleModal.classList.add('hidden');
-            newSaleForm.reset();
-        });
-    
-        // Function to load sales data
-        async function loadSales() {
-            try {
-                const response = await fetch("http://127.0.0.1:8000/sales");
-                const sales = await response.json();
-    
-                salesTableBody.innerHTML = ''; // Clear existing rows
-                sales.forEach(sale => {
-                    const newRow = document.createElement('tr');
-                    newRow.classList.add('border-b', 'hover:bg-blue-50', 'transition');
-                    newRow.innerHTML = `
-                        <td class="py-3 px-4">${sale.sale_id}</td>
-                        <td class="py-3 px-4">${sale.product}</td>
-                        <td class="py-3 px-4">${sale.quantity}</td>
-                        <td class="py-3 px-4">₦${parseFloat(sale.unit_price).toLocaleString()}</td>
-                        <td class="py-3 px-4">₦${parseFloat(sale.total_value).toLocaleString()}</td>
-                        <td class="py-3 px-4">${new Date(sale.date).toLocaleDateString()}</td>
-                        <td class="py-3 px-4">
-                            <button class="text-blue-500 hover:text-blue-700">
-                                <i data-feather="eye" class="w-4 h-4"></i>
-                            </button>
-                        </td>
-                    `;
-                    salesTableBody.appendChild(newRow);
-                });
-    
-                feather.replace();
-            } catch (error) {
-                console.error("Error loading sales:", error);
+
+    // Modal Toggle Events
+    newSaleBtn.addEventListener('click', () => {
+        newSaleModal.classList.remove('hidden');
+    });
+
+    cancelSaleBtn.addEventListener('click', () => {
+        newSaleModal.classList.add('hidden');
+        newSaleForm.reset();
+    });
+
+    // Function to load sales data
+    async function loadSales() {
+        try {
+            const response = await fetch("http://127.0.0.1:8000/sales", {
+                headers: getAuthHeaders()
+            });
+
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
             }
+
+            const sales = await response.json();
+
+            salesTableBody.innerHTML = ''; // Clear existing rows
+            sales.forEach(sale => {
+                const newRow = document.createElement('tr');
+                newRow.classList.add('border-b', 'hover:bg-blue-50', 'transition');
+                newRow.innerHTML = `
+                    <td class="py-3 px-4">${sale.sale_id}</td>
+                    <td class="py-3 px-4">${sale.product}</td>
+                    <td class="py-3 px-4">${sale.quantity}</td>
+                    <td class="py-3 px-4">₦${parseFloat(sale.unit_price).toLocaleString()}</td>
+                    <td class="py-3 px-4">₦${parseFloat(sale.total_value).toLocaleString()}</td>
+                    <td class="py-3 px-4">${new Date(sale.date).toLocaleDateString()}</td>
+                    <td class="py-3 px-4">
+                        <button class="text-blue-500 hover:text-blue-700">
+                            <i data-feather="eye" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                salesTableBody.appendChild(newRow);
+            });
+
+            feather.replace();
+        } catch (error) {
+            console.error("Error loading sales:", error);
         }
-    
-        // Function to load inventory and summary data
-        async function loadInitialData() {
-            try {
-                const inventoryResponse = await fetch("http://127.0.0.1:8000/inventory");
-                const inventoryData = await inventoryResponse.json();
-    
-                const summaryResponse = await fetch("http://127.0.0.1:8000/sales-summary");
-                const summaryData = await summaryResponse.json();
-    
-                // Populate product select dropdown
-                productSelect.innerHTML = '<option value="">Select Product</option>';
-                inventoryData.inventory.forEach(product => {
-                    if (product.in_stock > 0) {
-                        const option = document.createElement('option');
-                        option.value = product.product;
-                        option.setAttribute('data-price', product.unit_price);
-                        option.setAttribute('data-inventory', product.in_stock);
-                        option.textContent = `${product.product} - ₦${product.unit_price.toLocaleString()} (${product.in_stock} in stock)`;
-                        productSelect.appendChild(option);
-                    }
-                });
-    
-                // Update sales summary
-                document.querySelector('.bg-blue-100 .text-2xl').textContent = `₦${summaryData.today_sales.total_sales.toLocaleString()}`;
-                document.querySelector('.bg-green-100 .text-2xl').textContent = `₦${summaryData.month_sales.total_sales.toLocaleString()}`;
-                document.querySelector('.bg-purple-100 .text-2xl').textContent = summaryData.best_selling_product 
-                    ? summaryData.best_selling_product.product 
-                    : 'No Sales';
-    
-                // Load sales data
-                await loadSales();
-            } catch (error) {
-                console.error("Error loading initial data:", error);
+    }
+
+    // Function to load summary data
+    async function loadSummaryData() {
+        try {
+            const response = await fetch("http://127.0.0.1:8000/sales-summary", {
+                headers: getAuthHeaders()
+            });
+
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
             }
+
+            const summaryData = await response.json();
+            document.querySelector('.bg-blue-100 .text-2xl').textContent = `₦${summaryData.today_sales.total_sales.toLocaleString()}`;
+            document.querySelector('.bg-green-100 .text-2xl').textContent = `₦${summaryData.month_sales.total_sales.toLocaleString()}`;
+            document.querySelector('.bg-purple-100 .text-2xl').textContent = summaryData.best_selling_product 
+                ? summaryData.best_selling_product.product 
+                : 'No Sales';
+        } catch (error) {
+            console.error("Error loading summary data:", error);
         }
-    
-        // Initial Page Load
-        document.addEventListener('DOMContentLoaded', loadInitialData);
+    }
+
+    // Function to load inventory data
+    async function loadInventoryData() {
+        try {
+            const response = await fetch("http://127.0.0.1:8000/inventory", {
+                headers: getAuthHeaders()
+            });
+
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
+
+            const inventoryData = await response.json();
+
+            // Populate product select dropdown
+            productSelect.innerHTML = '<option value="">Select Product</option>';
+            inventoryData.inventory.forEach(product => {
+                if (product.in_stock > 0) {
+                    const option = document.createElement('option');
+                    option.value = product.product;
+                    option.setAttribute('data-price', product.unit_price);
+                    option.setAttribute('data-inventory', product.in_stock);
+                    option.textContent = `${product.product} - ₦${product.unit_price.toLocaleString()} (${product.in_stock} in stock)`;
+                    productSelect.appendChild(option);
+                }
+            });
+        } catch (error) {
+            console.error("Error loading inventory data:", error);
+        }
+    }
+
+    // Function to load initial data
+    async function loadInitialData() {
+        await loadInventoryData();
+        await loadSales();
+        await loadSummaryData();
+    }
+
+    // Handle logout
+    document.getElementById('logoutButton').addEventListener('click', async () => {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/logout', {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
+            
+            if (response.ok) {
+                localStorage.removeItem('userData');
+                window.location.href = 'index.html';
+            } else {
+                console.error('Logout failed');
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    });
+
+    // Initial Page Load
+    loadInitialData();
+});
     </script>
               
 </html>

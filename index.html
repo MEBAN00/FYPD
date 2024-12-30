@@ -3,220 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
-    <div class="container mx-auto px-4 py-6">
-        <nav class="flex justify-between items-center bg-white/80 backdrop-blur-md rounded-xl p-4 shadow-lg mb-6">
-            <div class="flex items-center space-x-4">
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full"></div>
-                <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                    AP
-                </h1>
-            </div>
-            <div class="flex space-x-4">
-                <a href="dashboard.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
-                    Home
-                </a>
-                <a href="inventory.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
-                    Inventory
-                </a>
-                <a href="sales.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
-                    Sales
-                </a>
-                <a href="prediction.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
-                    Analytics & Prediction
-                </a>
-            </div>
-        </nav>
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-xl p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                Welcome Back
+            </h1>
+        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="md:col-span-2">
-                <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 mb-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                            Welcome back, John Doe! 👋
-                        </h2>
-                        <div id="currentDate" class="text-sm text-gray-500">
-                            <!-- Current date will be dynamically inserted here -->
-                        </div>
-                    </div>
-                    <p class="text-gray-600">
-                        Here's a snapshot of your store's performance today.
-                    </p>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 text-center hover:scale-105 transform transition duration-300">
-                        <div class="text-sm text-gray-500 mb-2">Total Sales (Today)</div>
-                        <div id="todaySales" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                            ₦0
-                        </div>
-                    </div>
-                    <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 text-center hover:scale-105 transform transition duration-300">
-                        <div class="text-sm text-gray-500 mb-2">Total Transactions</div>
-                        <div id="totalTransactions" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                            0
-                        </div>
-                    </div>
-                    <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 text-center hover:scale-105 transform transition duration-300">
-                        <div class="text-sm text-gray-500 mb-2">Total Revenue (Month)</div>
-                        <div id="monthRevenue" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                            ₦0
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 mt-6">
-                    <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
-                        Monthly Revenue Trends
-                    </h3>
-                    <canvas id="revenueChart"></canvas>
-                </div>
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label for="name" class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                <input type="text" id="name" name="name" required
+                    class="mt-1 block w-full px-4 py-3 rounded-lg border-2 border-gray-300 shadow-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out hover:border-blue-400 bg-white/90">
             </div>
 
             <div>
-                <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
-                        Recent Activity
-                    </h3>
-                    <div id="recentActivityList" class="space-y-4">
-                        <!-- Recent sales will be dynamically inserted here -->
-                    </div>
-                </div>
+                <label for="password" class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+                <input type="password" id="password" name="password" required
+                    class="mt-1 block w-full px-4 py-3 rounded-lg border-2 border-gray-300 shadow-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out hover:border-blue-400 bg-white/90">
             </div>
+
+            <button type="submit"
+                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 ease-in-out transform hover:scale-[1.02]">
+                Login
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-600">
+                Don't have an account? 
+                <a href="signup.html" class="font-semibold text-blue-600 hover:text-blue-500">
+                    Sign up here
+                </a>
+            </p>
         </div>
     </div>
 
     <script>
-        // Function to format currency
-        function formatCurrency(amount) {
-            return '₦' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Get form values
+    const name = document.getElementById('name').value.trim();
+    const password = document.getElementById('password').value;
+    
+    // Basic validation
+    if (!name || !password) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    const formData = { name, password };
+    
+    try {
+        const response = await fetch('http://127.0.0.1:8000/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Store user data - using 'data' instead of 'userData'
+            localStorage.setItem('user', JSON.stringify({
+                name: data.name,
+                business_name: data.business_name,
+                access_token: data.access_token  // Fixed: using data instead of userData
+            }));
+            
+            window.location.href = 'dashboard.html';
+        } else {
+            // Show error message from server or default message
+            alert(data.detail || 'Invalid credentials');
         }
-
-        // Function to update current date
-        function updateCurrentDate() {
-            const currentDateElement = document.getElementById('currentDate');
-            const today = new Date();
-            const formattedDate = today.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            currentDateElement.textContent = formattedDate;
-        }
-
-        // Function to fetch and render monthly revenue
-        async function fetchMonthlyRevenue() {
-            try {
-                const response = await fetch('http://127.0.0.1:8000/monthly-revenue');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-
-                const ctx = document.getElementById('revenueChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.chart_labels,
-                        datasets: [{
-                            label: 'Monthly Revenue',
-                            data: data.chart_data,
-                            borderColor: 'rgba(59, 130, 246, 0.8)',
-                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return formatCurrency(value);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('Error fetching monthly revenue:', error);
-            }
-        }
-
-        // Function to fetch and render sales summary
-        async function fetchSalesSummary() {
-            try {
-                const response = await fetch('http://127.0.0.1:8000/sales-summary');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-
-                // Update dashboard metrics
-                document.getElementById('todaySales').textContent = formatCurrency(data.today_sales.total_sales);
-                document.getElementById('totalTransactions').textContent = data.today_sales.total_transactions;
-                document.getElementById('monthRevenue').textContent = formatCurrency(data.month_sales.total_sales);
-            } catch (error) {
-                console.error('Error fetching sales summary:', error);
-            }
-        }
-
-        // Function to fetch recent sales
-        async function fetchRecentSales() {
-            try {
-                const response = await fetch('http://127.0.0.1:8000/sales');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const sales = await response.json();
-                const recentActivityList = document.getElementById('recentActivityList');
-                
-                // Clear previous activities
-                recentActivityList.innerHTML = '';
-
-                // Display top 3 recent sales/activities
-                sales.slice(0, 3).forEach(sale => {
-                    const activityDiv = document.createElement('div');
-                    activityDiv.className = 'flex justify-between items-center border-b pb-2';
-                    activityDiv.innerHTML = `
-                        <div>
-                            <div class="font-semibold">Sale</div>
-                            <div class="text-sm text-gray-500">${sale.product}</div>
-                        </div>
-                        <div class="text-green-600">${formatCurrency(sale.total_value)}</div>
-                    `;
-                    recentActivityList.appendChild(activityDiv);
-                });
-            } catch (error) {
-                console.error('Error fetching recent sales:', error);
-            }
-        }
-
-        // Call functions when page loads
-        window.onload = () => {
-            updateCurrentDate();
-            fetchMonthlyRevenue();
-            fetchSalesSummary();
-            fetchRecentSales();
-        };
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error logging in. Please try again.');
+    }
+});
     </script>
 </body>
 </html>

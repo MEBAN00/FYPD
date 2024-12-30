@@ -17,7 +17,7 @@
                 </h1>
             </div>
             <div class="flex space-x-4">
-                <a href="index.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
+                <a href="dashboard.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
                     Dashboard
                 </a>
                 <a href="sales.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
@@ -26,6 +26,8 @@
                 <a href="prediction.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
                     Prediction
                 </a>
+                <button id="logoutButton" class="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition duration-300 ease-in-out" onclick="handleLogout()"> Logout 
+                </button>
             </div>
         </nav>
 
@@ -183,6 +185,20 @@
         document.addEventListener('DOMContentLoaded', () => {
     console.log('Page loaded. Setting up event listeners.');
 
+    
+
+    // Helper function to get authorization headers
+    const getAuthHeaders = () => ({
+        'Authorization': `Bearer ${userData.access_token}`,
+        'Content-Type': 'application/json'
+    });
+
+    // Function to handle unauthorized responses
+    const handleUnauthorized = () => {
+        localStorage.removeItem('userData');
+        window.location.href = 'index.html';
+    };
+
     // Fetch initial data and populate the table
     fetchInventoryData();
 
@@ -193,7 +209,15 @@
     // Function to fetch inventory data
     async function fetchInventoryData() {
         try {
-            const response = await fetch('http://127.0.0.1:8000/inventory');
+            const response = await fetch('http://127.0.0.1:8000/inventory', {
+                headers: getAuthHeaders()
+            });
+
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
+
             const data = await response.json();
 
             // Sort inventory data alphabetically
@@ -207,7 +231,7 @@
                 addRowToTable(item.product, item.category, item.in_stock, item.unit_price, item.total_value);
             });
 
-            // Update inventory insights with the data from the backend
+            // Update inventory insights
             document.getElementById('totalProducts').textContent = data.total_products;
             document.getElementById('totalInventoryValue').textContent = `₦${data.total_inventory_value.toLocaleString()}`;
             document.getElementById('lowStockAlerts').textContent = data.low_stock_products;
@@ -218,7 +242,7 @@
         }
     }
 
-    // Function to add a product row to the table
+    // Function to add a product row to the table (unchanged)
     function addRowToTable(product, category, quantity, unitPrice, totalValue) {
         const tableBody = document.querySelector('tbody');
         const row = document.createElement('tr');
@@ -264,7 +288,6 @@
         addForm.onsubmit = async (e) => {
             e.preventDefault();
 
-            // Get form inputs
             const product = addProductModal.querySelector('#productNameInput').value.trim();
             const category = addProductModal.querySelector('#categorySelect').value.trim();
             const in_stock = parseInt(addProductModal.querySelector('#quantityInput').value.trim());
@@ -274,9 +297,7 @@
                 try {
                     const response = await fetch('http://127.0.0.1:8000/add-product', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: getAuthHeaders(),
                         body: JSON.stringify({
                             product,
                             category,
@@ -285,11 +306,13 @@
                         }),
                     });
 
+                    if (response.status === 401) {
+                        handleUnauthorized();
+                        return;
+                    }
+
                     if (response.ok) {
-                        // Refresh the inventory data to show the new product
                         await fetchInventoryData();
-                        
-                        // Close modal and reset form
                         addProductModal.classList.add('hidden');
                         addForm.reset();
                     } else {
@@ -305,13 +328,12 @@
             }
         };
 
-        // Cancel button handler
         addProductModal.querySelector('button[type="button"]').addEventListener('click', () => {
             addProductModal.classList.add('hidden');
         });
     }
 
-    // Function to handle editing and deleting products
+    // Function to handle editing and deleting products (unchanged)
     function setupEditAndDeleteListeners() {
         document.querySelectorAll('.edit-btn').forEach(button => {
             button.addEventListener('click', handleEdit);
@@ -353,17 +375,17 @@
             try {
                 const response = await fetch(`http://127.0.0.1:8000/update-product/${productName}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify(updatedData),
                 });
 
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
                 if (response.ok) {
-                    // Refresh the inventory data to show the updated product
                     await fetchInventoryData();
-                    
-                    // Close modal
                     editModal.classList.add('hidden');
                 } else {
                     const error = await response.json();
@@ -393,14 +415,17 @@
         deleteModal.querySelector('#confirmDeleteBtn').onclick = async () => {
             try {
                 const response = await fetch(`http://127.0.0.1:8000/delete-product/${productName}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
                 });
 
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
                 if (response.ok) {
-                    // Refresh the inventory data to show the updated list
                     await fetchInventoryData();
-                    
-                    // Close modal
                     deleteModal.classList.add('hidden');
                 } else {
                     const error = await response.json();
@@ -416,6 +441,25 @@
             deleteModal.classList.add('hidden');
         };
     }
+
+    // Update the logout handler
+    document.getElementById('logoutButton').addEventListener('click', async () => {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/logout', {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
+            
+            if (response.ok) {
+                localStorage.removeItem('userData');
+                window.location.href = 'index.html';
+            } else {
+                console.error('Logout failed');
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    });
 });
     </script>
     
