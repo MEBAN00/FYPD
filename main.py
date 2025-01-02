@@ -693,7 +693,7 @@ async def get_inventory_turnover(current_user: dict = Depends(get_current_user))
         raise HTTPException(status_code=500, detail="Error calculating inventory turnover")
     
 @app.post("/signup")
-async def signup(user_data: UserSignup, current_user: dict = Depends(get_current_user)):
+async def signup(user_data: UserSignup):
     try:
         # Check if user already exists
         users_collection = db["FYPDU"]
