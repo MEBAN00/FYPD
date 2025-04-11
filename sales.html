@@ -127,8 +127,64 @@
 
     <script>
        document.addEventListener('DOMContentLoaded', () => {
-    console.log('Page loaded. Setting up event listeners.');
+        console.log('Page loaded. Setting up event listeners.');
 
+        // Function to get the authentication token from localStorage
+        function getAuthToken() {
+                    const user = JSON.parse(localStorage.getItem('user'));
+                    return user ? user.access_token : null;
+                }
+            
+                // Function to check if user is authenticated
+                function isAuthenticated() {
+                    const token = getAuthToken();
+                    return !!token;
+                }
+            
+                // Redirect to login if not authenticated
+                function checkAuth() {
+                    if (!isAuthenticated()) {
+                        window.location.href = 'index.html';
+                    }
+                }
+            
+                // Function to make authenticated fetch requests
+                async function authenticatedFetch(url, options = {}) {
+                    const token = getAuthToken();
+                    if (!token) {
+                        throw new Error('No authentication token found');
+                    }
+            
+                    const defaultOptions = {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    };
+            
+                    const mergedOptions = {
+                        ...defaultOptions,
+                        ...options,
+                        headers: {
+                            ...defaultOptions.headers,
+                            ...options.headers,
+                        },
+                    };
+            
+                    const response = await fetch(url, mergedOptions);
+            
+                    if (response.status === 401) {
+                        // Token might be expired or invalid
+                        localStorage.removeItem('user');
+                        window.location.href = 'index.html';
+                        throw new Error('Authentication failed');
+                    }
+            
+                    return response;
+                }
+            
+                // Check authentication before loading the page
+                checkAuth();
     // Initialize Feather Icons
     feather.replace();
 
@@ -142,18 +198,6 @@
     const totalValueInput = document.getElementById('totalValueInput');
     const newSaleForm = document.getElementById('newSaleForm');
     const salesTableBody = document.getElementById('salesTableBody');
-
-    // Helper function to get authorization headers
-    const getAuthHeaders = () => ({
-        'Authorization': `Bearer ${userData.access_token}`,
-        'Content-Type': 'application/json'
-    });
-
-    // Function to handle unauthorized responses
-    const handleUnauthorized = () => {
-        localStorage.removeItem('userData');
-        window.location.href = 'index.html';
-    };
 
     // Product Selection Event Listener
     productSelect.addEventListener('change', (e) => {
@@ -201,9 +245,8 @@
         };
 
         try {
-            const response = await fetch("http://127.0.0.1:8000/create-sale", {
+            const response = await authenticatedFetch("http://127.0.0.1:8000/create-sale", {
                 method: "POST",
-                headers: getAuthHeaders(),
                 body: JSON.stringify(saleData)
             });
 
@@ -262,9 +305,7 @@
     // Function to load sales data
     async function loadSales() {
         try {
-            const response = await fetch("http://127.0.0.1:8000/sales", {
-                headers: getAuthHeaders()
-            });
+            const response = await authenticatedFetch("http://127.0.0.1:8000/sales");
 
             if (response.status === 401) {
                 handleUnauthorized();
@@ -302,9 +343,7 @@
     // Function to load summary data
     async function loadSummaryData() {
         try {
-            const response = await fetch("http://127.0.0.1:8000/sales-summary", {
-                headers: getAuthHeaders()
-            });
+            const response = await authenticatedFetch("http://127.0.0.1:8000/sales-summary");
 
             if (response.status === 401) {
                 handleUnauthorized();
@@ -325,9 +364,7 @@
     // Function to load inventory data
     async function loadInventoryData() {
         try {
-            const response = await fetch("http://127.0.0.1:8000/inventory", {
-                headers: getAuthHeaders()
-            });
+            const response = await authenticatedFetch("http://127.0.0.1:8000/inventory");
 
             if (response.status === 401) {
                 handleUnauthorized();
@@ -363,9 +400,8 @@
     // Handle logout
     document.getElementById('logoutButton').addEventListener('click', async () => {
         try {
-            const response = await fetch('http://127.0.0.1:8000/logout', {
-                method: 'POST',
-                headers: getAuthHeaders()
+            const response = await authenticatedFetch('http://127.0.0.1:8000/logout', {
+                method: 'POST'
             });
             
             if (response.ok) {

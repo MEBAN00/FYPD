@@ -183,285 +183,321 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-    console.log('Page loaded. Setting up event listeners.');
-
-    
-
-    // Helper function to get authorization headers
-    const getAuthHeaders = () => ({
-        'Authorization': `Bearer ${userData.access_token}`,
-        'Content-Type': 'application/json'
-    });
-
-    // Function to handle unauthorized responses
-    const handleUnauthorized = () => {
-        localStorage.removeItem('userData');
-        window.location.href = 'index.html';
-    };
-
-    // Fetch initial data and populate the table
-    fetchInventoryData();
-
-    // Set up event listeners
-    setupAddProductListener();
-    setupEditAndDeleteListeners();
-
-    // Function to fetch inventory data
-    async function fetchInventoryData() {
-        try {
-            const response = await fetch('http://127.0.0.1:8000/inventory', {
-                headers: getAuthHeaders()
-            });
-
-            if (response.status === 401) {
-                handleUnauthorized();
-                return;
+            console.log('Page loaded. Setting up event listeners.');
+            
+            // Function to get the authentication token from localStorage
+            function getAuthToken() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                return user ? user.access_token : null;
             }
-
-            const data = await response.json();
-
-            // Sort inventory data alphabetically
-            const sortedInventory = data.inventory.sort((a, b) => a.product.localeCompare(b.product));
-
-            // Populate the table
-            const tableBody = document.querySelector('tbody');
-            tableBody.innerHTML = ''; // Clear existing rows
-
-            sortedInventory.forEach(item => {
-                addRowToTable(item.product, item.category, item.in_stock, item.unit_price, item.total_value);
-            });
-
-            // Update inventory insights
-            document.getElementById('totalProducts').textContent = data.total_products;
-            document.getElementById('totalInventoryValue').textContent = `₦${data.total_inventory_value.toLocaleString()}`;
-            document.getElementById('lowStockAlerts').textContent = data.low_stock_products;
-
-            console.log('Inventory data fetched and displayed.');
-        } catch (error) {
-            console.error('Error fetching inventory data:', error);
-        }
-    }
-
-    // Function to add a product row to the table (unchanged)
-    function addRowToTable(product, category, quantity, unitPrice, totalValue) {
-        const tableBody = document.querySelector('tbody');
-        const row = document.createElement('tr');
-        row.classList.add('border-b', 'hover:bg-blue-50', 'transition');
-        row.innerHTML = `
-            <td class="py-3 px-4 flex items-center">${product}</td>
-            <td class="py-3 px-4">${category}</td>
-            <td class="py-3 px-4">
-                <span class="${
-                    quantity < 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                } px-2 py-1 rounded-full">${quantity}</span>
-            </td>
-            <td class="py-3 px-4">₦${unitPrice.toLocaleString()}</td>
-            <td class="py-3 px-4">₦${totalValue.toLocaleString()}</td>
-            <td class="py-3 px-4">
-                <div class="flex space-x-2">
-                    <button class="text-blue-500 hover:text-blue-700 edit-btn">
-                        <i data-feather="edit-2" class="w-4 h-4"></i>
-                    </button>
-                    <button class="text-red-500 hover:text-red-700 delete-btn">
-                        <i data-feather="trash-2" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </td>
-        `;
-        tableBody.appendChild(row);
-
-        // Update icons
-        feather.replace();
-        setupEditAndDeleteListeners();
-    }
-
-    // Function to handle adding a product
-    function setupAddProductListener() {
-        const addProductButton = document.querySelector('button[class*="bg-gradient-to-r"]');
-        const addProductModal = document.getElementById('addProductModal');
-        const addForm = addProductModal.querySelector('form');
-
-        addProductButton.addEventListener('click', () => {
-            addProductModal.classList.remove('hidden');
-        });
-
-        addForm.onsubmit = async (e) => {
-            e.preventDefault();
-
-            const product = addProductModal.querySelector('#productNameInput').value.trim();
-            const category = addProductModal.querySelector('#categorySelect').value.trim();
-            const in_stock = parseInt(addProductModal.querySelector('#quantityInput').value.trim());
-            const unit_price = parseFloat(addProductModal.querySelector('#unitPriceInput').value.trim());
-
-            if (product && category && in_stock && unit_price) {
+        
+            // Function to check if user is authenticated
+            function isAuthenticated() {
+                const token = getAuthToken();
+                return !!token;
+            }
+        
+            // Redirect to login if not authenticated
+            function checkAuth() {
+                if (!isAuthenticated()) {
+                    window.location.href = 'index.html';
+                }
+            }
+        
+            // Function to make authenticated fetch requests
+            async function authenticatedFetch(url, options = {}) {
+                const token = getAuthToken();
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+        
+                const defaultOptions = {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                };
+        
+                const mergedOptions = {
+                    ...defaultOptions,
+                    ...options,
+                    headers: {
+                        ...defaultOptions.headers,
+                        ...options.headers,
+                    },
+                };
+        
+                const response = await fetch(url, mergedOptions);
+        
+                if (response.status === 401) {
+                    // Token might be expired or invalid
+                    localStorage.removeItem('user');
+                    window.location.href = 'index.html';
+                    throw new Error('Authentication failed');
+                }
+        
+                return response;
+            }
+        
+            // Check authentication before loading the page
+            checkAuth();
+        
+            // Function to fetch inventory data
+            async function fetchInventoryData() {
                 try {
-                    const response = await fetch('http://127.0.0.1:8000/add-product', {
-                        method: 'POST',
-                        headers: getAuthHeaders(),
-                        body: JSON.stringify({
-                            product,
-                            category,
-                            in_stock,
-                            unit_price
-                        }),
-                    });
-
+                    const response = await authenticatedFetch('http://127.0.0.1:8000/inventory');
+        
                     if (response.status === 401) {
                         handleUnauthorized();
                         return;
                     }
-
-                    if (response.ok) {
-                        await fetchInventoryData();
-                        addProductModal.classList.add('hidden');
-                        addForm.reset();
+        
+                    const data = await response.json();
+        
+                    // Sort inventory data alphabetically
+                    const sortedInventory = data.inventory.sort((a, b) => a.product.localeCompare(b.product));
+        
+                    // Populate the table
+                    const tableBody = document.querySelector('tbody');
+                    tableBody.innerHTML = ''; // Clear existing rows
+        
+                    sortedInventory.forEach(item => {
+                        addRowToTable(item.product, item.category, item.in_stock, item.unit_price, item.total_value);
+                    });
+        
+                    // Update inventory insights
+                    document.getElementById('totalProducts').textContent = data.total_products;
+                    document.getElementById('totalInventoryValue').textContent = `₦${data.total_inventory_value.toLocaleString()}`;
+                    document.getElementById('lowStockAlerts').textContent = data.low_stock_products;
+        
+                    console.log('Inventory data fetched and displayed.');
+                } catch (error) {
+                    console.error('Error fetching inventory data:', error);
+                }
+            }
+        
+            // Function to add a product row to the table
+            function addRowToTable(product, category, quantity, unitPrice, totalValue) {
+                const tableBody = document.querySelector('tbody');
+                const row = document.createElement('tr');
+                row.classList.add('border-b', 'hover:bg-blue-50', 'transition');
+                row.innerHTML = `
+                    <td class="py-3 px-4 flex items-center">${product}</td>
+                    <td class="py-3 px-4">${category}</td>
+                    <td class="py-3 px-4">
+                        <span class="${
+                            quantity < 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                        } px-2 py-1 rounded-full">${quantity}</span>
+                    </td>
+                    <td class="py-3 px-4">₦${unitPrice.toLocaleString()}</td>
+                    <td class="py-3 px-4">₦${totalValue.toLocaleString()}</td>
+                    <td class="py-3 px-4">
+                        <div class="flex space-x-2">
+                            <button class="text-blue-500 hover:text-blue-700 edit-btn">
+                                <i data-feather="edit-2" class="w-4 h-4"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700 delete-btn">
+                                <i data-feather="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+        
+                // Update icons
+                feather.replace();
+                setupEditAndDeleteListeners();
+            }
+        
+            // Function to handle adding a product
+            function setupAddProductListener() {
+                const addProductButton = document.querySelector('button[class*="bg-gradient-to-r"]');
+                const addProductModal = document.getElementById('addProductModal');
+                const addForm = addProductModal.querySelector('form');
+        
+                addProductButton.addEventListener('click', () => {
+                    addProductModal.classList.remove('hidden');
+                });
+        
+                addForm.onsubmit = async (e) => {
+                    e.preventDefault();
+        
+                    const product = addProductModal.querySelector('#productNameInput').value.trim();
+                    const category = addProductModal.querySelector('#categorySelect').value.trim();
+                    const in_stock = parseInt(addProductModal.querySelector('#quantityInput').value.trim());
+                    const unit_price = parseFloat(addProductModal.querySelector('#unitPriceInput').value.trim());
+        
+                    if (product && category && in_stock && unit_price) {
+                        try {
+                            const response = await authenticatedFetch('https://fypd.onrender.com/add-product', {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    product,
+                                    category,
+                                    in_stock,
+                                    unit_price
+                                }),
+                            });
+        
+                            if (response.status === 401) {
+                                handleUnauthorized();
+                                return;
+                            }
+        
+                            if (response.ok) {
+                                await fetchInventoryData();
+                                addProductModal.classList.add('hidden');
+                                addForm.reset();
+                            } else {
+                                const error = await response.json();
+                                alert(`Error adding product: ${error.detail}`);
+                            }
+                        } catch (error) {
+                            console.error('Error adding product:', error);
+                            alert('Failed to add product. Please try again.');
+                        }
                     } else {
-                        const error = await response.json();
-                        alert(`Error adding product: ${error.detail}`);
+                        alert('All fields are required.');
+                    }
+                };
+        
+                addProductModal.querySelector('button[type="button"]').addEventListener('click', () => {
+                    addProductModal.classList.add('hidden');
+                });
+            }
+        
+            // Function to handle editing and deleting products
+            function setupEditAndDeleteListeners() {
+                document.querySelectorAll('.edit-btn').forEach(button => {
+                    button.addEventListener('click', handleEdit);
+                });
+        
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', handleDelete);
+                });
+            }
+        
+            // Handle edit product
+            function handleEdit(event) {
+                const row = event.target.closest('tr');
+                const editModal = document.getElementById('editProductModal');
+        
+                const productName = row.children[0].textContent.trim();
+                const category = row.children[1].textContent.trim();
+                const quantity = parseInt(row.children[2].textContent.replace(/\D/g, ''));
+                const unitPrice = parseFloat(row.children[3].textContent.replace(/[^\d.]/g, ''));
+        
+                editModal.querySelector('#editProductNameInput').value = productName;
+                editModal.querySelector('#editCategorySelect').value = category;
+                editModal.querySelector('#editQuantityInput').value = quantity;
+                editModal.querySelector('#editUnitPriceInput').value = unitPrice;
+        
+                editModal.classList.remove('hidden');
+        
+                const editForm = editModal.querySelector('form');
+                editForm.onsubmit = async (e) => {
+                    e.preventDefault();
+        
+                    const updatedData = {
+                        product: editModal.querySelector('#editProductNameInput').value.trim(),
+                        category: editModal.querySelector('#editCategorySelect').value.trim(),
+                        in_stock: parseInt(editModal.querySelector('#editQuantityInput').value.trim()),
+                        unit_price: parseFloat(editModal.querySelector('#editUnitPriceInput').value.trim())
+                    };
+        
+                    try {
+                        const response = await authenticatedFetch(`https://fypd.onrender.com/update-product/${productName}`, {
+                            method: 'PUT',
+                            body: JSON.stringify(updatedData),
+                        });
+        
+                        if (response.status === 401) {
+                            handleUnauthorized();
+                            return;
+                        }
+        
+                        if (response.ok) {
+                            await fetchInventoryData();
+                            editModal.classList.add('hidden');
+                        } else {
+                            const error = await response.json();
+                            alert(`Error updating product: ${error.detail}`);
+                        }
+                    } catch (error) {
+                        console.error('Error updating product:', error);
+                        alert('Failed to update product. Please try again.');
+                    }
+                };
+        
+                editModal.querySelector('#cancelEditBtn').onclick = () => {
+                    editModal.classList.add('hidden');
+                };
+            }
+        
+            // Handle delete product
+            function handleDelete(event) {
+                const row = event.target.closest('tr');
+                const deleteModal = document.getElementById('deleteConfirmationModal');
+        
+                const productName = row.children[0].textContent.trim();
+                deleteModal.querySelector('#deleteProductName').textContent = productName;
+        
+                deleteModal.classList.remove('hidden');
+        
+                deleteModal.querySelector('#confirmDeleteBtn').onclick = async () => {
+                    try {
+                        const response = await authenticatedFetch(`https://fypd.onrender.com/delete-product/${productName}`, {
+                            method: 'DELETE',
+                        });
+        
+                        if (response.status === 401) {
+                            handleUnauthorized();
+                            return;
+                        }
+        
+                        if (response.ok) {
+                            await fetchInventoryData();
+                            deleteModal.classList.add('hidden');
+                        } else {
+                            const error = await response.json();
+                            alert(`Error deleting product: ${error.detail}`);
+                        }
+                    } catch (error) {
+                        console.error('Error deleting product:', error);
+                        alert('Failed to delete product. Please try again.');
+                    }
+                };
+        
+                deleteModal.querySelector('#cancelDeleteBtn').onclick = () => {
+                    deleteModal.classList.add('hidden');
+                };
+            }
+        
+            // Update the logout handler
+            document.getElementById('logoutButton').addEventListener('click', async () => {
+                try {
+                    const response = await authenticatedFetch('https://fypd.onrender.com/logout', {
+                        method: 'POST'
+                    });
+        
+                    if (response.ok) {
+                        localStorage.removeItem('user');
+                        window.location.href = 'index.html';
+                    } else {
+                        console.error('Logout failed');
                     }
                 } catch (error) {
-                    console.error('Error adding product:', error);
-                    alert('Failed to add product. Please try again.');
+                    console.error('Logout error:', error);
                 }
-            } else {
-                alert('All fields are required.');
-            }
-        };
-
-        addProductModal.querySelector('button[type="button"]').addEventListener('click', () => {
-            addProductModal.classList.add('hidden');
-        });
-    }
-
-    // Function to handle editing and deleting products (unchanged)
-    function setupEditAndDeleteListeners() {
-        document.querySelectorAll('.edit-btn').forEach(button => {
-            button.addEventListener('click', handleEdit);
-        });
-
-        document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', handleDelete);
-        });
-    }
-
-    // Handle edit product
-    function handleEdit(event) {
-        const row = event.target.closest('tr');
-        const editModal = document.getElementById('editProductModal');
-
-        const productName = row.children[0].textContent.trim();
-        const category = row.children[1].textContent.trim();
-        const quantity = parseInt(row.children[2].textContent.replace(/\D/g, ''));
-        const unitPrice = parseFloat(row.children[3].textContent.replace(/[^\d.]/g, ''));
-
-        editModal.querySelector('#editProductNameInput').value = productName;
-        editModal.querySelector('#editCategorySelect').value = category;
-        editModal.querySelector('#editQuantityInput').value = quantity;
-        editModal.querySelector('#editUnitPriceInput').value = unitPrice;
-
-        editModal.classList.remove('hidden');
-
-        const editForm = editModal.querySelector('form');
-        editForm.onsubmit = async (e) => {
-            e.preventDefault();
-
-            const updatedData = {
-                product: editModal.querySelector('#editProductNameInput').value.trim(),
-                category: editModal.querySelector('#editCategorySelect').value.trim(),
-                in_stock: parseInt(editModal.querySelector('#editQuantityInput').value.trim()),
-                unit_price: parseFloat(editModal.querySelector('#editUnitPriceInput').value.trim())
-            };
-
-            try {
-                const response = await fetch(`http://127.0.0.1:8000/update-product/${productName}`, {
-                    method: 'PUT',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify(updatedData),
-                });
-
-                if (response.status === 401) {
-                    handleUnauthorized();
-                    return;
-                }
-
-                if (response.ok) {
-                    await fetchInventoryData();
-                    editModal.classList.add('hidden');
-                } else {
-                    const error = await response.json();
-                    alert(`Error updating product: ${error.detail}`);
-                }
-            } catch (error) {
-                console.error('Error updating product:', error);
-                alert('Failed to update product. Please try again.');
-            }
-        };
-
-        editModal.querySelector('#cancelEditBtn').onclick = () => {
-            editModal.classList.add('hidden');
-        };
-    }
-
-    // Handle delete product
-    function handleDelete(event) {
-        const row = event.target.closest('tr');
-        const deleteModal = document.getElementById('deleteConfirmationModal');
-
-        const productName = row.children[0].textContent.trim();
-        deleteModal.querySelector('#deleteProductName').textContent = productName;
-
-        deleteModal.classList.remove('hidden');
-
-        deleteModal.querySelector('#confirmDeleteBtn').onclick = async () => {
-            try {
-                const response = await fetch(`http://127.0.0.1:8000/delete-product/${productName}`, {
-                    method: 'DELETE',
-                    headers: getAuthHeaders()
-                });
-
-                if (response.status === 401) {
-                    handleUnauthorized();
-                    return;
-                }
-
-                if (response.ok) {
-                    await fetchInventoryData();
-                    deleteModal.classList.add('hidden');
-                } else {
-                    const error = await response.json();
-                    alert(`Error deleting product: ${error.detail}`);
-                }
-            } catch (error) {
-                console.error('Error deleting product:', error);
-                alert('Failed to delete product. Please try again.');
-            }
-        };
-
-        deleteModal.querySelector('#cancelDeleteBtn').onclick = () => {
-            deleteModal.classList.add('hidden');
-        };
-    }
-
-    // Update the logout handler
-    document.getElementById('logoutButton').addEventListener('click', async () => {
-        try {
-            const response = await fetch('http://127.0.0.1:8000/logout', {
-                method: 'POST',
-                headers: getAuthHeaders()
             });
-            
-            if (response.ok) {
-                localStorage.removeItem('userData');
-                window.location.href = 'index.html';
-            } else {
-                console.error('Logout failed');
-            }
-        } catch (error) {
-            console.error('Logout error:', error);
-        }
-    });
-});
-    </script>
+        
+            // Fetch initial data and populate the table
+            fetchInventoryData();
+            setupAddProductListener();
+            setupEditAndDeleteListeners();
+        });
+        </script>
+        
     
 </body>
 </html>

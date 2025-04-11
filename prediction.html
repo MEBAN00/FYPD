@@ -193,27 +193,69 @@
 
 
     <script>
+        // Function to get the authentication token from localStorage
+        function getAuthToken() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                return user ? user.access_token : null;
+            }
+        
+            // Function to check if user is authenticated
+            function isAuthenticated() {
+                const token = getAuthToken();
+                return !!token;
+            }
+        
+            // Redirect to login if not authenticated
+            function checkAuth() {
+                if (!isAuthenticated()) {
+                    window.location.href = 'index.html';
+                }
+            }
+        
+            // Function to make authenticated fetch requests
+            async function authenticatedFetch(url, options = {}) {
+                const token = getAuthToken();
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+        
+                const defaultOptions = {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                };
+        
+                const mergedOptions = {
+                    ...defaultOptions,
+                    ...options,
+                    headers: {
+                        ...defaultOptions.headers,
+                        ...options.headers,
+                    },
+                };
+        
+                const response = await fetch(url, mergedOptions);
+        
+                if (response.status === 401) {
+                    // Token might be expired or invalid
+                    localStorage.removeItem('user');
+                    window.location.href = 'index.html';
+                    throw new Error('Authentication failed');
+                }
+        
+                return response;
+            }
+        
+            // Check authentication before loading the page
+            checkAuth();
         // Store inventory data globally
         let inventoryData = [];
-
-        // Helper function to get authorization headers
-        const getAuthHeaders = () => ({
-            'Authorization': `Bearer ${userData.access_token}`,
-            'Content-Type': 'application/json'
-        });
-
-        // Function to handle unauthorized responses
-        const handleUnauthorized = () => {
-            localStorage.removeItem('userData');
-            window.location.href = 'index.html';
-        };
 
         // Fetch inventory data and set up search functionality
         async function loadInventoryData() {
     try {
-        const response = await fetch('http://localhost:8000/inventory', {
-            headers: getAuthHeaders()
-        });
+        const response = await authenticatedFetch('https://fypd.onrender.com/inventory');
         
         if (response.status === 401) {
             handleUnauthorized();
@@ -235,9 +277,7 @@
         // Function to load inventory turnover data
         async function loadInventoryTurnover() {
     try {
-        const response = await fetch('http://localhost:8000/inventory-turnover', {
-            headers: getAuthHeaders()
-        });
+        const response = await authenticatedFetch('https://fypd.onrender.com/inventory-turnover');
 
         if (response.status === 401) {
             handleUnauthorized();
@@ -276,9 +316,8 @@
 
 async function handleLogout() {
     try {
-        const response = await fetch('http://127.0.0.1:8000/logout', {
-            method: 'POST',
-            headers: getAuthHeaders()
+        const response = await authenticatedFetch('https://fypd.onrender.com/logout', {
+            method: 'POST'
         });
         
         if (response.ok) {
@@ -383,9 +422,8 @@ document.getElementById('predictionForm').addEventListener('submit', async (e) =
     };
 
     try {
-        const response = await fetch('http://localhost:8000/predict', {
+        const response = await authenticatedFetch('https://fypd.onrender.com/predict', {
             method: 'POST',
-            headers: getAuthHeaders(),
             body: JSON.stringify(formData)
         });
 
