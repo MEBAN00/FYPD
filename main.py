@@ -186,7 +186,7 @@ async def get_monthly_revenue(current_user: dict = Depends(get_current_user)):
     try:
         # Adjust to fetch last year's data
         current_date = datetime.now()
-        last_year = current_date.year - 1
+        last_year = current_date.year - 2
 
         # Debugging: Log date details
         logging.info(f"Fetching data for year: {last_year}")
@@ -278,7 +278,7 @@ async def get_inventory(current_user: dict = Depends(get_current_user)):
     try:
         # Fetch all inventory data from MongoDB
         inventory_collection = db["FYPDI"]
-        products = await inventory_collection.find().to_list(length=None)  # No limit
+        products = await inventory_collection.find().to_list(length=50)  # No limit
 
         # Remove duplicates by using a dictionary keyed by product name
         unique_products = {}
@@ -613,14 +613,21 @@ async def get_inventory_turnover(current_user: dict = Depends(get_current_user))
         sales_collection = db["FYPDS"]
         inventory_collection = db["FYPDI"]
         
-        # Calculate sales for each product
+        # Limit inventory fetch to 50 products
+        inventory = await inventory_collection.find().sort("product", 1).limit(50).to_list(length=50)
+        
+        # Get the product names from the limited inventory
+        product_names = [product["product"] for product in inventory]
+        
+        # Calculate sales for only the selected products
         sales_pipeline = [
             {
                 "$match": {
                     "date": {
                         "$gte": year_start,
                         "$lte": current_date
-                    }
+                    },
+                    "product": {"$in": product_names}  # Only match products in our limited inventory
                 }
             },
             {
@@ -634,20 +641,17 @@ async def get_inventory_turnover(current_user: dict = Depends(get_current_user))
         
         sales_data = await sales_collection.aggregate(sales_pipeline).to_list(length=None)
         
-        # Get current inventory levels
-        inventory = await inventory_collection.find().to_list(length=None)
-        
         # Calculate turnover metrics
         turnover_data = []
         for product in inventory:
             product_sales = next((item for item in sales_data if item["_id"] == product["product"]), None)
             
+            # Calculate months elapsed in current year
+            months_elapsed = (current_date - year_start).days / 30.44  # Average days per month
+            
             if product_sales:
-                # Calculate months elapsed in current year
-                months_elapsed = (current_date - year_start).days / 30.44  # Average days per month
-                
                 # Calculate annual turnover rate (annualized based on current year data)
-                annual_turnover_rate = (product_sales["total_quantity_sold"] / product["in_stock"]) * (12 / months_elapsed)
+                annual_turnover_rate = (product_sales["total_quantity_sold"] / product["in_stock"]) * (12 / months_elapsed) if product["in_stock"] > 0 else 0
                 
                 # Calculate days inventory outstanding (DIO)
                 if product_sales["total_quantity_sold"] > 0:
@@ -664,11 +668,21 @@ async def get_inventory_turnover(current_user: dict = Depends(get_current_user))
                     "days_inventory": round(days_inventory, 1),
                     "sales_value": float(product_sales["total_sales_value"])
                 })
+            else:
+                # Include products with no sales
+                turnover_data.append({
+                    "product": product["product"],
+                    "current_stock": product["in_stock"],
+                    "quantity_sold": 0,
+                    "turnover_rate": 0,
+                    "days_inventory": float('inf'),
+                    "sales_value": 0
+                })
         
         # Sort by turnover rate descending
         turnover_data.sort(key=lambda x: x["turnover_rate"], reverse=True)
         
-        # Calculate overall metrics
+        # Calculate overall metrics for the limited set
         total_inventory = sum(item["current_stock"] for item in turnover_data)
         total_sales = sum(item["quantity_sold"] for item in turnover_data)
         
