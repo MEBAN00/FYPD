@@ -10,3 +10,4 @@ python_jose==3.3.0
 scikit_learn==1.4.2
 uvicorn
 gunicorn
+python-multipart
