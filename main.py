@@ -22,11 +22,13 @@ from typing import Optional
 from fastapi import Cookie, Response, Request
 from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
+from admin_routes import router as admin_router
+
+from auth import get_current_user, db, mongo_client, create_access_token, blacklisted_tokens, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 load_dotenv()
 
-
-
+security = HTTPBearer()
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -35,10 +37,8 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-security = HTTPBearer()
+
 
 
 # MongoDB Connection
@@ -114,52 +114,8 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class TokenData(BaseModel):
-    username: Optional[str] = None
-
-blacklisted_tokens = set() 
-
-# Token functions
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(security)):
-    try:
-        token = credentials.credentials
-        
-        # Check if token is blacklisted
-        if token in blacklisted_tokens:  # For in-memory blacklisting
-        # Or for MongoDB blacklisting:
-        # if await db.blacklisted_tokens.find_one({"token": token}):
-            raise HTTPException(
-                status_code=401,
-                detail="Token has been invalidated",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise HTTPException(status_code=401, detail="Could not validate credentials")
-        token_data = TokenData(username=username)
-    except JWTError:
-        raise HTTPException(
-            status_code=401,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    user = await db.FYPDU.find_one({"name": token_data.username})
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
+# Add this line to include the admin routes
+app.include_router(admin_router)
 
 @app.post("/predict")
 async def predict(new_data: PredictionInput, current_user: dict = Depends(get_current_user)):
@@ -751,16 +707,27 @@ async def login(user_data: UserLogin):
         if not user or not bcrypt.verify(user_data.password, user["password"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
+        # Debug log to check what's in the user document
+        print(f"User document: {user}")
+        
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": user["name"]}, expires_delta=access_token_expires
         )
         
+        # Make sure to include the is_admin field from the database
+        # Use .get() with a default of False to handle cases where the field might not exist
+        is_admin = user.get("is_admin", False)
+        
+        # Debug log to check the admin status
+        print(f"Is admin: {is_admin}")
+        
         return {
             "access_token": access_token,
             "token_type": "bearer",
             "name": user["name"],
-            "business_name": user["business_name"]
+            "business_name": user["business_name"],
+            "is_admin": is_admin  # Include the correct admin status
         }
         
     except Exception as e:
