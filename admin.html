@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-shipped {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-received {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-cancelled {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200">
+            <div class="flex items-center justify-center h-16 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">AP</span>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-800">AP Admin</h1>
+                </div>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <div class="px-4 mb-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Main</p>
+                    <ul class="mt-2 space-y-1">
+                        <li>
+                            <a href="dashboard.html" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100">
+                                <i class="fas fa-chart-line w-5 h-5 mr-3 text-gray-400"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="admin.html" class="flex items-center px-4 py-2 text-primary-600 bg-primary-50 rounded-lg font-medium">
+                                <i class="fas fa-cog w-5 h-5 mr-3 text-primary-500"></i>
+                                <span>Admin Panel</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100">
+                                <i class="fas fa-boxes w-5 h-5 mr-3 text-gray-400"></i>
+                                <span>Inventory</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="px-4 mb-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Management</p>
+                    <ul class="mt-2 space-y-1">
+                        <li>
+                            <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="sidebarUsers">
+                                <i class="fas fa-users w-5 h-5 mr-3 text-gray-400"></i>
+                                <span>Users</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="sidebarInventory">
+                                <i class="fas fa-dolly w-5 h-5 mr-3 text-gray-400"></i>
+                                <span>Inventory</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="sidebarPurchaseOrders">
+                                <i class="fas fa-file-invoice w-5 h-5 mr-3 text-gray-400"></i>
+                                <span>Purchase Orders</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="sidebarReports">
+                                <i class="fas fa-chart-bar w-5 h-5 mr-3 text-gray-400"></i>
+                                <span>Reports</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="px-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">System</p>
+                    <ul class="mt-2 space-y-1">
+                        <li>
+                            <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="sidebarBackup">
+                                <i class="fas fa-database w-5 h-5 mr-3 text-gray-400"></i>
+                                <span>Backup & Restore</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="sidebarLogs">
+                                <i class="fas fa-list w-5 h-5 mr-3 text-gray-400"></i>
+                                <span>System Logs</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <button id="logoutButton" class="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition duration-150 ease-in-out">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Navigation -->
+            <header class="bg-white border-b border-gray-200 shadow-sm">
+                <div class="flex items-center justify-between px-6 h-16">
+                    <!-- Mobile menu button -->
+                    <button type="button" class="md:hidden text-gray-500 hover:text-gray-600 focus:outline-none" id="mobileSidebarToggle">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    
+                    <!-- Page title -->
+                    <h1 class="text-xl font-semibold text-gray-800 md:hidden">AP Admin</h1>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Date display -->
+                        <div class="hidden md:block">
+                            <div id="currentDate" class="text-sm text-gray-500"></div>
+                        </div>
+                        
+                        <!-- User dropdown -->
+                        <div class="relative">
+                            <button type="button" class="flex items-center space-x-2 focus:outline-none" id="userDropdownButton">
+                                <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold">
+                                    A
+                                </div>
+                                <span class="hidden md:inline-block text-sm font-medium text-gray-700">Admin</span>
+                                <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                            </button>
+                            
+                            <!-- Dropdown menu -->
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden" id="userDropdown">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <button id="logoutDropdownButton" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Mobile Sidebar (hidden by default) -->
+            <div class="fixed inset-0 z-40 hidden" id="mobileSidebar">
+                <div class="absolute inset-0 bg-gray-600 opacity-75" id="mobileSidebarBackdrop"></div>
+                <div class="relative flex flex-col w-72 max-w-sm bg-white h-full">
+                    <div class="flex items-center justify-between px-4 h-16 border-b border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+                                <span class="text-white font-bold text-lg">AP</span>
+                            </div>
+                            <h1 class="text-xl font-bold text-gray-800">AP Admin</h1>
+                        </div>
+                        <button type="button" class="text-gray-500 hover:text-gray-600 focus:outline-none" id="closeMobileSidebar">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <nav class="flex-1 overflow-y-auto py-4">
+                        <!-- Same navigation as desktop sidebar -->
+                        <div class="px-4 mb-4">
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Main</p>
+                            <ul class="mt-2 space-y-1">
+                                <li>
+                                    <a href="dashboard.html" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100">
+                                        <i class="fas fa-chart-line w-5 h-5 mr-3 text-gray-400"></i>
+                                        <span>Dashboard</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="admin.html" class="flex items-center px-4 py-2 text-primary-600 bg-primary-50 rounded-lg font-medium">
+                                        <i class="fas fa-cog w-5 h-5 mr-3 text-primary-500"></i>
+                                        <span>Admin Panel</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100">
+                                        <i class="fas fa-boxes w-5 h-5 mr-3 text-gray-400"></i>
+                                        <span>Inventory</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="px-4 mb-4">
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Management</p>
+                            <ul class="mt-2 space-y-1">
+                                <li>
+                                    <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="mobileSidebarUsers">
+                                        <i class="fas fa-users w-5 h-5 mr-3 text-gray-400"></i>
+                                        <span>Users</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="mobileSidebarInventory">
+                                        <i class="fas fa-dolly w-5 h-5 mr-3 text-gray-400"></i>
+                                        <span>Inventory</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="mobileSidebarPurchaseOrders">
+                                        <i class="fas fa-file-invoice w-5 h-5 mr-3 text-gray-400"></i>
+                                        <span>Purchase Orders</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="mobileSidebarReports">
+                                        <i class="fas fa-chart-bar w-5 h-5 mr-3 text-gray-400"></i>
+                                        <span>Reports</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="px-4">
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">System</p>
+                            <ul class="mt-2 space-y-1">
+                                <li>
+                                    <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="mobileSidebarBackup">
+                                        <i class="fas fa-database w-5 h-5 mr-3 text-gray-400"></i>
+                                        <span>Backup & Restore</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100" id="mobileSidebarLogs">
+                                        <i class="fas fa-list w-5 h-5 mr-3 text-gray-400"></i>
+                                        <span>System Logs</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </nav>
+                    <div class="p-4 border-t border-gray-200">
+                        <button id="mobileLogoutButton" class="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition duration-150 ease-in-out">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
+                <!-- Page Header -->
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Admin Control Panel</h2>
+                    <p class="mt-1 text-gray-600">Manage users, inventory, sales, and system settings.</p>
+                </div>
+
+                <!-- Admin Functions Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- User Management -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
+                        <div class="p-5 border-b border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800">User Management</h3>
+                                <span class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                                    <i class="fas fa-users text-primary-500"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="space-y-3">
+                                <button id="viewUsersBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-eye"></i>
+                                    <span>View All Users</span>
+                                </button>
+                                <button id="addUserBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-green-500 hover:bg-green-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Add New User</span>
+                                </button>
+                            </div>
+                            
+                            <!-- User List (Hidden by default) -->
+                            <div id="userListContainer" class="mt-4 hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-700">User List</h4>
+                                    <button class="text-sm text-gray-500 hover:text-gray-700" id="closeUserList">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Business</th>
+                                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200" id="userTableBody">
+                                            <!-- User data will be inserted here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Add User Form (Hidden by default) -->
+                            <div id="addUserForm" class="mt-4 hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-700">Add New User</h4>
+                                    <button class="text-sm text-gray-500 hover:text-gray-700" id="closeAddUserForm">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <form id="userForm" class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                        <input type="text" id="userName" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                                        <input type="text" id="userBusiness" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                                        <input type="date" id="userDob" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                        <input type="password" id="userPassword" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out" required>
+                                    </div>
+                                    <button type="submit" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                                        <i class="fas fa-save"></i>
+                                        <span>Create User</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Management -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
+                        <div class="p-5 border-b border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800">Inventory Management</h3>
+                                <span class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                                    <i class="fas fa-boxes text-primary-500"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="space-y-3">
+                                <a href="inventory.html" class="btn-icon block w-full px-4 py-2.5 text-center rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-list"></i>
+                                    <span>View Inventory</span>
+                                </a>
+                                <button id="bulkImportBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-green-500 hover:bg-green-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-file-import"></i>
+                                    <span>Bulk Import Products</span>
+                                </button>
+                                <button id="exportInventoryBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-indigo-500 hover:bg-indigo-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-file-export"></i>
+                                    <span>Export Inventory Data</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Bulk Import Form (Hidden by default) -->
+                            <div id="bulkImportForm" class="mt-4 hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-700">Bulk Import Products</h4>
+                                    <button class="text-sm text-gray-500 hover:text-gray-700" id="closeBulkImportForm">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-3">Upload CSV file with product data</p>
+                                <form id="importForm" class="space-y-3">
+                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                        <label for="csvFile" class="cursor-pointer">
+                                            <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
+                                            <p class="text-sm text-gray-500">Click to browse or drag and drop</p>
+                                            <input type="file" id="csvFile" accept=".csv" class="hidden">
+                                        </label>
+                                        <p id="selectedFileName" class="mt-2 text-sm text-primary-600 hidden"></p>
+                                    </div>
+                                    <button type="submit" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                                        <i class="fas fa-upload"></i>
+                                        <span>Upload and Import</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Management -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
+                        <div class="p-5 border-b border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800">System Management</h3>
+                                <span class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                                    <i class="fas fa-cogs text-primary-500"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="space-y-3">
+                                <button id="backupBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-download"></i>
+                                    <span>Backup Database</span>
+                                </button>
+                                <button id="restoreBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-amber-500 hover:bg-amber-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-upload"></i>
+                                    <span>Restore Database</span>
+                                </button>
+                                <button id="systemLogsBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-gray-500 hover:bg-gray-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-list-alt"></i>
+                                    <span>View System Logs</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Restore Form (Hidden by default) -->
+                            <div id="restoreForm" class="mt-4 hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-700">Restore Database</h4>
+                                    <button class="text-sm text-gray-500 hover:text-gray-700" id="closeRestoreForm">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-3">Upload backup file</p>
+                                <form id="dbRestoreForm" class="space-y-3">
+                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                        <label for="backupFile" class="cursor-pointer">
+                                            <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
+                                            <p class="text-sm text-gray-500">Click to browse or drag and drop</p>
+                                            <input type="file" id="backupFile" accept=".json" class="hidden">
+                                        </label>
+                                        <p id="selectedBackupFileName" class="mt-2 text-sm text-primary-600 hidden"></p>
+                                    </div>
+                                    <button type="submit" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-amber-500 hover:bg-amber-600 transition duration-150 ease-in-out">
+                                        <i class="fas fa-database"></i>
+                                        <span>Restore</span>
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            <!-- System Logs (Hidden by default) -->
+                            <div id="systemLogsContainer" class="mt-4 hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-700">System Logs</h4>
+                                    <button class="text-sm text-gray-500 hover:text-gray-700" id="closeSystemLogs">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="max-h-60 overflow-y-auto bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                    <pre id="systemLogsContent" class="text-xs text-gray-700 whitespace-pre-wrap"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reports Section -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
+                        <div class="p-5 border-b border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800">Generate Reports</h3>
+                                <span class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                                    <i class="fas fa-chart-bar text-primary-500"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="space-y-3">
+                                <button id="salesReportBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Sales Report</span>
+                                </button>
+                                <button id="inventoryReportBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-green-500 hover:bg-green-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-boxes"></i>
+                                    <span>Inventory Report</span>
+                                </button>
+                                <button id="userActivityReportBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-indigo-500 hover:bg-indigo-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-user-clock"></i>
+                                    <span>User Activity Report</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Report Parameters (Hidden by default) -->
+                            <div id="reportParameters" class="mt-4 hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-700">Report Parameters</h4>
+                                    <button class="text-sm text-gray-500 hover:text-gray-700" id="closeReportParameters">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <form id="reportForm" class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                        <input type="date" id="reportStartDate" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                        <input type="date" id="reportEndDate" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Format</label>
+                                        <select id="reportFormat" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out">
+                                            <option value="pdf">PDF</option>
+                                            <option value="csv">CSV</option>
+                                            <option value="excel">Excel</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                                        <i class="fas fa-file-export"></i>
+                                        <span>Generate Report</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Purchase Orders -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
+                        <div class="p-5 border-b border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800">Manage Purchase Orders</h3>
+                                <span class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                                    <i class="fas fa-file-invoice text-primary-500"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="space-y-3">
+                                <button id="viewPOBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-list"></i>
+                                    <span>View Purchase Orders</span>
+                                </button>
+                                <button id="createPOBtn" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-green-500 hover:bg-green-600 transition duration-150 ease-in-out">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Create Purchase Order</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Purchase Orders List (Hidden by default) -->
+                            <div id="poListContainer" class="mt-4 hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-700">Purchase Orders</h4>
+                                    <button class="text-sm text-gray-500 hover:text-gray-700" id="closePOList">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PO #</th>
+                                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200" id="poTableBody">
+                                            <!-- PO data will be inserted here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Create PO Form (Hidden by default) -->
+                            <div id="createPOForm" class="mt-4 hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-700">Create Purchase Order</h4>
+                                    <button class="text-sm text-gray-500 hover:text-gray-700" id="closeCreatePOForm">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <form id="poForm" class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                                        <input type="text" id="poSupplier" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                                        <select id="poProduct" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out">
+                                            <!-- Products will be loaded here -->
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                        <input type="number" id="poQuantity" min="1" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out" required>
+                                    </div>
+                                    <button type="submit" class="btn-icon w-full px-4 py-2.5 rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                                        <i class="fas fa-save"></i>
+                                        <span>Create Order</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Overview -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden card-hover">
+                        <div class="p-5 border-b border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800">Analytics Overview</h3>
+                                <span class="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                                    <i class="fas fa-chart-pie text-primary-500"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="bg-gray-50 rounded-lg p-3 text-center">
+                                    <p class="text-sm text-gray-500">Total Users</p>
+                                    <p class="text-2xl font-bold text-primary-600" id="totalUsersCount">--</p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3 text-center">
+                                    <p class="text-sm text-gray-500">Total Products</p>
+                                    <p class="text-2xl font-bold text-green-600" id="totalProductsCount">--</p>
+                                </div>
+                            </div>
+                            <div class="h-40">
+                                <canvas id="salesChart"></canvas>
+                            </div>
+                            <p class="text-xs text-gray-500 text-center mt-2">Last 7 days sales overview</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal for notifications and confirmations -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="modalTitle" class="text-xl font-bold text-gray-800"></h3>
+                <button class="text-gray-400 hover:text-gray-500" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mb-6">
+                <p id="modalContent" class="text-gray-600"></p>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="modalCancelBtn" class="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300 transition duration-150 ease-in-out">
+                    Cancel
+                </button>
+                <button id="modalConfirmBtn" class="px-4 py-2 rounded-lg text-white bg-primary-500 hover:bg-primary-600 transition duration-150 ease-in-out">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to get the authentication token from localStorage
+        function getAuthToken() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            return user ? user.access_token : null;
+        }
+
+        // Function to check if user is authenticated
+        function isAuthenticated() {
+            const token = getAuthToken();
+            return !!token;
+        }
+
+        // Redirect to login if not authenticated
+        function checkAuth() {
+            if (!isAuthenticated()) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Function to make authenticated fetch requests
+        async function authenticatedFetch(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            };
+
+            const mergedOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...options.headers,
+                },
+            };
+
+            const response = await fetch(url, mergedOptions);
+            
+            if (response.status === 401) {
+                // Token might be expired or invalid
+                localStorage.removeItem('user');
+                window.location.href = 'index.html';
+                throw new Error('Authentication failed');
+            }
+            
+            return response;
+        }
+
+        // Function to update current date
+        function updateCurrentDate() {
+            const currentDateElement = document.getElementById('currentDate');
+            const today = new Date();
+            const formattedDate = today.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            currentDateElement.textContent = formattedDate;
+        }
+
+        // Function to show modal
+        function showModal(title, content, confirmCallback = null) {
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalContent = document.getElementById('modalContent');
+            const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+            const modalCancelBtn = document.getElementById('modalCancelBtn');
+            const modalClose = document.getElementById('modalClose');
+            
+            modalTitle.textContent = title;
+            modalContent.textContent = content;
+            
+            const hideModal = () => {
+                modal.classList.add('hidden');
+            };
+            
+            modalCancelBtn.onclick = hideModal;
+            modalClose.onclick = hideModal;
+            
+            if (confirmCallback) {
+                modalConfirmBtn.onclick = () => {
+                    confirmCallback();
+                    hideModal();
+                };
+                modalConfirmBtn.classList.remove('hidden');
+                modalCancelBtn.classList.remove('hidden');
+            } else {
+                modalConfirmBtn.classList.add('hidden');
+                modalCancelBtn.textContent = 'Close';
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        // User Management Functions
+        async function fetchUsers() {
+            try {
+                const response = await authenticatedFetch('http://127.0.0.1:8000/admin/users');
+                const users = await response.json();
+                
+                const userTableBody = document.getElementById('userTableBody');
+                userTableBody.innerHTML = '';
+                
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap">${user.name}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">${user.business_name}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <button class="text-primary-500 hover:text-primary-700 mr-2" onclick="editUser('${user._id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700" onclick="deleteUser('${user._id}', '${user.name}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    userTableBody.appendChild(row);
+                });
+                
+                document.getElementById('userListContainer').classList.remove('hidden');
+                document.getElementById('addUserForm').classList.add('hidden');
+                
+                // Update analytics
+                document.getElementById('totalUsersCount').textContent = users.length;
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                showModal('Error', 'Failed to fetch users. Please try again.');
+            }
+        }
+
+        async function createUser(userData) {
+            try {
+                const response = await authenticatedFetch('http://127.0.0.1:8000/admin/users', {
+                    method: 'POST',
+                    body: JSON.stringify(userData)
+                });
+                
+                if (response.ok) {
+                    showModal('Success', 'User created successfully!');
+                    document.getElementById('userForm').reset();
+                    document.getElementById('addUserForm').classList.add('hidden');
+                    fetchUsers();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to create user');
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+                showModal('Error', error.message || 'Failed to create user. Please try again.');
+            }
+        }
+
+        function deleteUser(userId, userName) {
+            showModal('Confirm Delete', `Are you sure you want to delete user "${userName}"?`, async () => {
+                try {
+                    const response = await authenticatedFetch(`http://127.0.0.1:8000/admin/users/${userId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        showModal('Success', 'User deleted successfully!');
+                        fetchUsers();
+                    } else {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Failed to delete user');
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    showModal('Error', error.message || 'Failed to delete user. Please try again.');
+                }
+            });
+        }
+
+        // Inventory Management Functions
+        async function bulkImportProducts(file) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const token = getAuthToken();
+                const response = await fetch('http://127.0.0.1:8000/admin/bulk-import', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showModal('Success', `Successfully imported ${result.imported_count} products!`);
+                    document.getElementById('importForm').reset();
+                    document.getElementById('bulkImportForm').classList.add('hidden');
+                    document.getElementById('selectedFileName').classList.add('hidden');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to import products');
+                }
+            } catch (error) {
+                console.error('Error importing products:', error);
+                showModal('Error', error.message || 'Failed to import products. Please try again.');
+            }
+        }
+
+        async function exportInventory() {
+            try {
+                const response = await authenticatedFetch('http://127.0.0.1:8000/admin/export-inventory');
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'inventory_export.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    
+                    showModal('Success', 'Inventory data exported successfully!');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to export inventory');
+                }
+            } catch (error) {
+                console.error('Error exporting inventory:', error);
+                showModal('Error', error.message || 'Failed to export inventory. Please try again.');
+            }
+        }
+
+        // System Management Functions
+        async function backupDatabase() {
+            try {
+                const response = await authenticatedFetch('http://127.0.0.1:8000/admin/backup');
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const date = new Date().toISOString().split('T')[0];
+                    a.download = `database_backup_${date}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    
+                    showModal('Success', 'Database backup created successfully!');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to backup database');
+                }
+            } catch (error) {
+                console.error('Error backing up database:', error);
+                showModal('Error', error.message || 'Failed to backup database. Please try again.');
+            }
+        }
+
+        async function restoreDatabase(file) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const token = getAuthToken();
+                const response = await fetch('http://127.0.0.1:8000/admin/restore', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    showModal('Success', 'Database restored successfully!');
+                    document.getElementById('dbRestoreForm').reset();
+                    document.getElementById('restoreForm').classList.add('hidden');
+                    document.getElementById('selectedBackupFileName').classList.add('hidden');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to restore database');
+                }
+            } catch (error) {
+                console.error('Error restoring database:', error);
+                showModal('Error', error.message || 'Failed to restore database. Please try again.');
+            }
+        }
+
+        async function fetchSystemLogs() {
+            try {
+                const response = await authenticatedFetch('http://127.0.0.1:8000/admin/logs');
+                
+                if (response.ok) {
+                    const logs = await response.text();
+                    document.getElementById('systemLogsContent').textContent = logs;
+                    document.getElementById('systemLogsContainer').classList.remove('hidden');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to fetch system logs');
+                }
+            } catch (error) {
+                console.error('Error fetching system logs:', error);
+                showModal('Error', error.message || 'Failed to fetch system logs. Please try again.');
+            }
+        }
+
+        // Reports Functions
+        async function generateReport(reportType, params) {
+            try {
+                const response = await authenticatedFetch(`http://127.0.0.1:8000/admin/reports/${reportType}`, {
+                    method: 'POST',
+                    body: JSON.stringify(params)
+                });
+                
+                if (response.ok) {
+                    if (params.format === 'csv' || params.format === 'excel') {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${reportType}_report.${params.format}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+                    }
+                    
+                    showModal('Success', 'Report generated successfully!');
+                    document.getElementById('reportForm').reset();
+                    document.getElementById('reportParameters').classList.add('hidden');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to generate report');
+                }
+            } catch (error) {
+                console.error('Error generating report:', error);
+                showModal('Error', error.message || 'Failed to generate report. Please try again.');
+            }
+        }
+
+        // Purchase Order Functions
+        async function fetchPurchaseOrders() {
+            try {
+                const response = await authenticatedFetch('http://127.0.0.1:8000/admin/purchase-orders');
+                const orders = await response.json();
+                
+                const poTableBody = document.getElementById('poTableBody');
+                poTableBody.innerHTML = '';
+                
+                orders.forEach(order => {
+                    const statusClass = getStatusClass(order.status);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap">${order.po_number}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">${order.supplier}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="status-badge ${statusClass}">${order.status}</span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <button class="text-primary-500 hover:text-primary-700 mr-2" onclick="viewPODetails('${order._id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="text-green-500 hover:text-green-700 mr-2" onclick="updatePOStatus('${order._id}', 'received')">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700" onclick="deletePO('${order._id}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    poTableBody.appendChild(row);
+                });
+                
+                document.getElementById('poListContainer').classList.remove('hidden');
+                document.getElementById('createPOForm').classList.add('hidden');
+            } catch (error) {
+                console.error('Error fetching purchase orders:', error);
+                showModal('Error', 'Failed to fetch purchase orders. Please try again.');
+            }
+        }
+
+        async function createPurchaseOrder(poData) {
+            try {
+                const response = await authenticatedFetch('http://127.0.0.1:8000/admin/purchase-orders', {
+                    method: 'POST',
+                    body: JSON.stringify(poData)
+                });
+                
+                if (response.ok) {
+                    showModal('Success', 'Purchase order created successfully!');
+                    document.getElementById('poForm').reset();
+                    document.getElementById('createPOForm').classList.add('hidden');
+                    fetchPurchaseOrders();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to create purchase order');
+                }
+            } catch (error) {
+                console.error('Error creating purchase order:', error);
+                showModal('Error', error.message || 'Failed to create purchase order. Please try again.');
+            }
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'pending': return 'status-pending';
+                case 'approved': return 'status-approved';
+                case 'shipped': return 'status-shipped';
+                case 'received': return 'status-received';
+                case 'cancelled': return 'status-cancelled';
+                default: return 'status-pending';
+            }
+        }
+
+        async function updatePOStatus(poId, status) {
+            try {
+                const response = await authenticatedFetch(`http://127.0.0.1:8000/admin/purchase-orders/${poId}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status })
+                });
+                
+                if (response.ok) {
+                    showModal('Success', `Purchase order status updated to ${status}!`);
+                    fetchPurchaseOrders();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to update purchase order status');
+                }
+            } catch (error) {
+                console.error('Error updating purchase order status:', error);
+                showModal('Error', error.message || 'Failed to update purchase order status. Please try again.');
+            }
+        }
+
+        function deletePO(poId) {
+            showModal('Confirm Delete', 'Are you sure you want to delete this purchase order?', async () => {
+                try {
+                    const response = await authenticatedFetch(`http://127.0.0.1:8000/admin/purchase-orders/${poId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        showModal('Success', 'Purchase order deleted successfully!');
+                        fetchPurchaseOrders();
+                    } else {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Failed to delete purchase order');
+                    }
+                } catch (error) {
+                    console.error('Error deleting purchase order:', error);
+                    showModal('Error', error.message || 'Failed to delete purchase order. Please try again.');
+                }
+            });
+        }
+
+        async function loadProductsForPO() {
+            try {
+                const response = await authenticatedFetch('http://127.0.0.1:8000/inventory');
+                const data = await response.json();
+                
+                const productSelect = document.getElementById('poProduct');
+                productSelect.innerHTML = '';
+                
+                data.inventory.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.product;
+                    option.textContent = product.product;
+                    productSelect.appendChild(option);
+                });
+                
+                // Update analytics
+                document.getElementById('totalProductsCount').textContent = data.inventory.length;
+            } catch (error) {
+                console.error('Error loading products:', error);
+                showModal('Error', 'Failed to load products. Please try again.');
+            }
+        }
+
+        // Initialize sales chart
+        function initSalesChart() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            
+            // Generate some dummy data for the chart
+            const labels = [];
+            const data = [];
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                data.push(Math.floor(Math.random() * 500) + 100);
+            }
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Sales',
+                        data: data,
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        borderColor: 'rgba(14, 165, 233, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Logout handler
+        async function handleLogout() {
+            try {
+                const response = await authenticatedFetch('http://127.0.0.1:8000/logout', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    localStorage.removeItem('user');
+                    window.location.href = 'index.html';
+                } else {
+                    throw new Error('Logout failed');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showModal('Error', 'An error occurred during logout.');
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication
+            checkAuth();
+            updateCurrentDate();
+            initSalesChart();
+            
+            // Mobile sidebar toggle
+            document.getElementById('mobileSidebarToggle').addEventListener('click', function() {
+                document.getElementById('mobileSidebar').classList.remove('hidden');
+            });
+            
+            document.getElementById('closeMobileSidebar').addEventListener('click', function() {
+                document.getElementById('mobileSidebar').classList.add('hidden');
+            });
+            
+            document.getElementById('mobileSidebarBackdrop').addEventListener('click', function() {
+                document.getElementById('mobileSidebar').classList.add('hidden');
+            });
+            
+            // User dropdown
+            document.getElementById('userDropdownButton').addEventListener('click', function() {
+                document.getElementById('userDropdown').classList.toggle('hidden');
+            });
+            
+            // Close user dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                const dropdown = document.getElementById('userDropdown');
+                const button = document.getElementById('userDropdownButton');
+                
+                if (!dropdown.contains(event.target) && !button.contains(event.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+            
+            // Logout buttons
+            document.getElementById('logoutButton').addEventListener('click', handleLogout);
+            document.getElementById('logoutDropdownButton').addEventListener('click', handleLogout);
+            document.getElementById('mobileLogoutButton').addEventListener('click', handleLogout);
+            
+            // User Management
+            document.getElementById('viewUsersBtn').addEventListener('click', fetchUsers);
+            document.getElementById('sidebarUsers').addEventListener('click', fetchUsers);
+            document.getElementById('mobileSidebarUsers').addEventListener('click', function() {
+                fetchUsers();
+                document.getElementById('mobileSidebar').classList.add('hidden');
+            });
+            
+            document.getElementById('addUserBtn').addEventListener('click', function() {
+                document.getElementById('addUserForm').classList.remove('hidden');
+                document.getElementById('userListContainer').classList.add('hidden');
+            });
+            
+            document.getElementById('closeUserList').addEventListener('click', function() {
+                document.getElementById('userListContainer').classList.add('hidden');
+            });
+            
+            document.getElementById('closeAddUserForm').addEventListener('click', function() {
+                document.getElementById('addUserForm').classList.add('hidden');
+            });
+            
+            document.getElementById('userForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const userData = {
+                    name: document.getElementById('userName').value,
+                    business_name: document.getElementById('userBusiness').value,
+                    dob: document.getElementById('userDob').value,
+                    password: document.getElementById('userPassword').value
+                };
+                createUser(userData);
+            });
+            
+            // Inventory Management
+            document.getElementById('sidebarInventory').addEventListener('click', function() {
+                document.getElementById('bulkImportForm').classList.remove('hidden');
+            });
+            
+            document.getElementById('mobileSidebarInventory').addEventListener('click', function() {
+                document.getElementById('bulkImportForm').classList.remove('hidden');
+                document.getElementById('mobileSidebar').classList.add('hidden');
+            });
+            
+            document.getElementById('bulkImportBtn').addEventListener('click', function() {
+                document.getElementById('bulkImportForm').classList.remove('hidden');
+            });
+            
+            document.getElementById('closeBulkImportForm').addEventListener('click', function() {
+                document.getElementById('bulkImportForm').classList.add('hidden');
+            });
+            
+            document.getElementById('csvFile').addEventListener('change', function(e) {
+                const fileName = e.target.files[0]?.name;
+                if (fileName) {
+                    document.getElementById('selectedFileName').textContent = fileName;
+                    document.getElementById('selectedFileName').classList.remove('hidden');
+                }
+            });
+            
+            document.getElementById('importForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const file = document.getElementById('csvFile').files[0];
+                if (file) {
+                    bulkImportProducts(file);
+                } else {
+                    showModal('Error', 'Please select a CSV file to import.');
+                }
+            });
+            
+            document.getElementById('exportInventoryBtn').addEventListener('click', exportInventory);
+            
+            // System Management
+            document.getElementById('sidebarBackup').addEventListener('click', backupDatabase);
+            document.getElementById('mobileSidebarBackup').addEventListener('click', function() {
+                backupDatabase();
+                document.getElementById('mobileSidebar').classList.add('hidden');
+            });
+            
+            document.getElementById('backupBtn').addEventListener('click', backupDatabase);
+            
+            document.getElementById('restoreBtn').addEventListener('click', function() {
+                document.getElementById('restoreForm').classList.remove('hidden');
+                document.getElementById('systemLogsContainer').classList.add('hidden');
+            });
+            
+            document.getElementById('closeRestoreForm').addEventListener('click', function() {
+                document.getElementById('restoreForm').classList.add('hidden');
+            });
+            
+            document.getElementById('backupFile').addEventListener('change', function(e) {
+                const fileName = e.target.files[0]?.name;
+                if (fileName) {
+                    document.getElementById('selectedBackupFileName').textContent = fileName;
+                    document.getElementById('selectedBackupFileName').classList.remove('hidden');
+                }
+            });
+            
+            document.getElementById('dbRestoreForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const file = document.getElementById('backupFile').files[0];
+                if (file) {
+                    restoreDatabase(file);
+                } else {
+                    showModal('Error', 'Please select a backup file to restore.');
+                }
+            });
+            
+            document.getElementById('sidebarLogs').addEventListener('click', fetchSystemLogs);
+            document.getElementById('mobileSidebarLogs').addEventListener('click', function() {
+                fetchSystemLogs();
+                document.getElementById('mobileSidebar').classList.add('hidden');
+            });
+            
+            document.getElementById('systemLogsBtn').addEventListener('click', function() {
+                fetchSystemLogs();
+                document.getElementById('restoreForm').classList.add('hidden');
+            });
+            
+            document.getElementById('closeSystemLogs').addEventListener('click', function() {
+                document.getElementById('systemLogsContainer').classList.add('hidden');
+            });
+            
+            // Reports
+            document.getElementById('sidebarReports').addEventListener('click', function() {
+                document.getElementById('reportParameters').classList.remove('hidden');
+                document.getElementById('reportForm').dataset.type = 'sales';
+            });
+            
+            document.getElementById('mobileSidebarReports').addEventListener('click', function() {
+                document.getElementById('reportParameters').classList.remove('hidden');
+                document.getElementById('reportForm').dataset.type = 'sales';
+                document.getElementById('mobileSidebar').classList.add('hidden');
+            });
+            
+            document.getElementById('salesReportBtn').addEventListener('click', function() {
+                document.getElementById('reportParameters').classList.remove('hidden');
+                document.getElementById('reportForm').dataset.type = 'sales';
+            });
+            
+            document.getElementById('inventoryReportBtn').addEventListener('click', function() {
+                document.getElementById('reportParameters').classList.remove('hidden');
+                document.getElementById('reportForm').dataset.type = 'inventory';
+            });
+            
+            document.getElementById('userActivityReportBtn').addEventListener('click', function() {
+                document.getElementById('reportParameters').classList.remove('hidden');
+                document.getElementById('reportForm').dataset.type = 'user-activity';
+            });
+            
+            document.getElementById('closeReportParameters').addEventListener('click', function() {
+                document.getElementById('reportParameters').classList.add('hidden');
+            });
+            
+            document.getElementById('reportForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const reportType = this.dataset.type;
+                const params = {
+                    start_date: document.getElementById('reportStartDate').value,
+                    end_date: document.getElementById('reportEndDate').value,
+                    format: document.getElementById('reportFormat').value
+                };
+                generateReport(reportType, params);
+            });
+            
+            // Purchase Orders
+            document.getElementById('sidebarPurchaseOrders').addEventListener('click', fetchPurchaseOrders);
+            document.getElementById('mobileSidebarPurchaseOrders').addEventListener('click', function() {
+                fetchPurchaseOrders();
+                document.getElementById('mobileSidebar').classList.add('hidden');
+            });
+            
+            document.getElementById('viewPOBtn').addEventListener('click', fetchPurchaseOrders);
+            
+            document.getElementById('closePOList').addEventListener('click', function() {
+                document.getElementById('poListContainer').classList.add('hidden');
+            });
+            
+            document.getElementById('createPOBtn').addEventListener('click', function() {
+                document.getElementById('createPOForm').classList.remove('hidden');
+                document.getElementById('poListContainer').classList.add('hidden');
+                loadProductsForPO();
+            });
+            
+            document.getElementById('closeCreatePOForm').addEventListener('click', function() {
+                document.getElementById('createPOForm').classList.add('hidden');
+            });
+            
+            document.getElementById('poForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const poData = {
+                    supplier: document.getElementById('poSupplier').value,
+                    product: document.getElementById('poProduct').value,
+                    quantity: parseInt(document.getElementById('poQuantity').value)
+                };
+                createPurchaseOrder(poData);
+            });
+            
+            // Load initial data
+            fetchUsers();
+            loadProductsForPO();
+        });
+
+        // Functions that need to be globally accessible
+        window.editUser = function(userId) {
+            showModal('Edit User', 'User editing functionality will be implemented soon.');
+        };
+        
+        window.deleteUser = deleteUser;
+        
+        window.viewPODetails = function(poId) {
+            showModal('Purchase Order Details', 'Detailed view functionality will be implemented soon.');
+        };
+        
+        window.updatePOStatus = updatePOStatus;
+        
+        window.deletePO = deletePO;
+    </script>
+</body>
+</html>

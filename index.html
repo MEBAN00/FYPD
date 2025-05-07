@@ -47,13 +47,25 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // Clear previous error messages
+    const errorElement = document.getElementById('errorMessage');
+    if (errorElement) {
+        errorElement.textContent = '';
+        errorElement.classList.add('hidden');
+    }
+    
     // Get form values
     const name = document.getElementById('name').value.trim();
     const password = document.getElementById('password').value;
     
     // Basic validation
     if (!name || !password) {
-        alert('Please fill in all fields');
+        if (errorElement) {
+            errorElement.textContent = 'Please fill in all fields';
+            errorElement.classList.remove('hidden');
+        } else {
+            alert('Please fill in all fields');
+        }
         return;
     }
     
@@ -69,23 +81,44 @@
         });
         
         const data = await response.json();
+        console.log("Login response:", data); // Debug log
         
         if (response.ok) {
-            // Store user data - using 'data' instead of 'userData'
+            // Store user data - ensure is_admin is properly handled
             localStorage.setItem('user', JSON.stringify({
                 name: data.name,
                 business_name: data.business_name,
-                access_token: data.access_token  // Fixed: using data instead of userData
+                access_token: data.access_token,
+                is_admin: Boolean(data.is_admin) // Ensure it's a boolean
             }));
             
-            window.location.href = 'dashboard.html';
+            console.log("Stored user data:", JSON.parse(localStorage.getItem('user'))); // Debug log
+            
+            // Redirect based on user role
+            if (data.is_admin) {
+                console.log("Redirecting to admin page"); // Debug log
+                window.location.href = 'admin.html';
+            } else {
+                console.log("Redirecting to dashboard"); // Debug log
+                window.location.href = 'dashboard.html';
+            }
         } else {
             // Show error message from server or default message
-            alert(data.detail || 'Invalid credentials');
+            if (errorElement) {
+                errorElement.textContent = data.detail || 'Invalid credentials';
+                errorElement.classList.remove('hidden');
+            } else {
+                alert(data.detail || 'Invalid credentials');
+            }
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error logging in. Please try again.');
+        if (errorElement) {
+            errorElement.textContent = 'Error logging in. Please try again.';
+            errorElement.classList.remove('hidden');
+        } else {
+            alert('Error logging in. Please try again.');
+        }
     }
 });
     </script>
