@@ -245,7 +245,7 @@
             // Function to fetch inventory data
             async function fetchInventoryData() {
                 try {
-                    const response = await authenticatedFetch('http://127.0.0.1:8000/inventory');
+                    const response = await authenticatedFetch('https://fypd.onrender.com/inventory');
         
                     if (response.status === 401) {
                         handleUnauthorized();
