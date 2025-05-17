@@ -705,10 +705,7 @@ async def login(user_data: UserLogin):
         user = await users_collection.find_one({"name": user_data.name})
         
         if not user or not bcrypt.verify(user_data.password, user["password"]):
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        # Debug log to check what's in the user document
-        print(f"User document: {user}")
+            raise HTTPException(status_code=401, detail="Invalid credentials")  
         
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
