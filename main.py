@@ -23,6 +23,7 @@ from fastapi import Cookie, Response, Request
 from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
 from admin_routes import router as admin_router
+from csv_download_routes import router as csv_router
 
 from auth import get_current_user, db, mongo_client, create_access_token, blacklisted_tokens, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
@@ -37,8 +38,6 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME")
 SECRET_KEY = os.getenv("SECRET_KEY")
-
-
 
 
 # MongoDB Connection
@@ -56,6 +55,7 @@ try:
 except Exception as e:
     logging.error(f"Error loading model: {str(e)}")
     dt_model = None
+
 
 # Create the FastAPI app
 app = FastAPI()
@@ -116,6 +116,51 @@ class Token(BaseModel):
 
 # Add this line to include the admin routes
 app.include_router(admin_router)
+app.include_router(csv_router)
+
+async def track_inventory_update(
+    product: str, 
+    update_type: str, 
+    quantity_changed: int, 
+    previous_stock: int, 
+    new_stock: int, 
+    reason: str,
+    additional_details: dict = None,
+    user: str = "system"
+):
+    """
+    Enhanced function to track all types of inventory updates
+    
+    Args:
+        product: Product name
+        update_type: Type of update (Stock Reduction, Stock Addition, Product Added, Product Updated, Product Deleted)
+        quantity_changed: Change in quantity (positive for additions, negative for reductions)
+        previous_stock: Stock level before change
+        new_stock: Stock level after change
+        reason: Reason for the change
+        additional_details: Additional information about the change
+        user: User who made the change
+    """
+    try:
+        inventory_updates_collection = db["FYPD_INVENTORY_UPDATES"]
+        
+        update_record = {
+            "product": product,
+            "update_type": update_type,
+            "quantity_changed": quantity_changed,
+            "previous_stock": previous_stock,
+            "new_stock": new_stock,
+            "update_date": datetime.now(),
+            "reason": reason,
+            "user": user,
+            "additional_details": additional_details or {}
+        }
+        
+        await inventory_updates_collection.insert_one(update_record)
+        logging.info(f"Inventory update tracked: {product} - {update_type} - {quantity_changed}")
+        
+    except Exception as e:
+        logging.error(f"Error tracking inventory update: {str(e)}")
 
 @app.post("/predict")
 async def predict(new_data: PredictionInput, current_user: dict = Depends(get_current_user)):
@@ -128,6 +173,22 @@ async def predict(new_data: PredictionInput, current_user: dict = Depends(get_cu
         new_df = pd.DataFrame([new_data.dict()])
         new_data_transformed = column_transformer.transform(new_df)
         pred = dt_model.predict(new_data_transformed)
+        
+        # Store prediction in database
+        predictions_collection = db["FYPD_PREDICTIONS"]
+        prediction_record = {
+            "product": new_data.product,
+            "quantity": new_data.quantity,
+            "unit_price": new_data.unit_price,
+            "total_cost": new_data.total_cost,
+            "total_price": new_data.total_price,
+            "predicted_profit": int(pred[0]),
+            "prediction_date": datetime.now(),
+            "year": new_data.Year,
+            "user": current_user.get("name", "")
+        }
+        
+        await predictions_collection.insert_one(prediction_record)
         
         # Prepare response
         return JSONResponse(content={
@@ -312,6 +373,22 @@ async def add_product(product_data: dict, current_user: dict = Depends(get_curre
         inventory_collection = db["FYPDI"]
         result = await inventory_collection.insert_one(new_product)
         
+        # Track inventory update for product addition
+        await track_inventory_update(
+            product=new_product['product'],
+            update_type="Product Added",
+            quantity_changed=new_product['in_stock'],  # All stock is new
+            previous_stock=0,  # No previous stock
+            new_stock=new_product['in_stock'],
+            reason="New product added to inventory",
+            additional_details={
+                "category": new_product['category'],
+                "unit_price": new_product['unit_price'],
+                "product_id": str(result.inserted_id)
+            },
+            user=current_user.get("name", "unknown")
+        )
+        
         # Prepare response
         return JSONResponse(content={
             "message": "Product added successfully",
@@ -341,10 +418,29 @@ async def create_sale(sale_data: SaleInput, current_user: dict = Depends(get_cur
                 if product['in_stock'] < sale_data.quantity:
                     raise HTTPException(status_code=400, detail="Insufficient inventory")
                 
+                previous_stock = product['in_stock']
+                new_stock = previous_stock - sale_data.quantity
+                
                 # Reduce inventory
                 await inventory_collection.update_one(
                     {"product": sale_data.product},
                     {"$inc": {"in_stock": -sale_data.quantity}}
+                )
+                
+                # Track inventory update for sale
+                await track_inventory_update(
+                    product=sale_data.product,
+                    update_type="Stock Reduction",
+                    quantity_changed=-sale_data.quantity,
+                    previous_stock=previous_stock,
+                    new_stock=new_stock,
+                    reason=f"Sale transaction",
+                    additional_details={
+                        "sale_id": sale_data.sale_id,
+                        "unit_price": float(sale_data.unit_price),
+                        "total_value": float(sale_data.total_value)
+                    },
+                    user=current_user.get("name", "unknown")
                 )
                 
                 # 2. Record Sale in Sales Collection
@@ -354,7 +450,7 @@ async def create_sale(sale_data: SaleInput, current_user: dict = Depends(get_cur
                     "product": sale_data.product,
                     "quantity": sale_data.quantity,
                     "unit_price": float(sale_data.unit_price),
-                    "total_value": float(sale_data.total_value),  # Changed from total_price
+                    "total_value": float(sale_data.total_value),
                     "date": sale_data.date
                 }
                 
@@ -497,34 +593,78 @@ async def get_sales(current_user: dict = Depends(get_current_user)):
 @app.put("/update-product/{product_id}")
 async def update_product(product_id: str, product_data: dict, current_user: dict = Depends(get_current_user)):
     try:
-        # Convert product_id to ObjectId if necessary
         inventory_collection = db["FYPDI"]
         
-        # Validate input data
+        # First, get the current product data to track changes
+        current_product = await inventory_collection.find_one({"product": product_id})
+        
+        if not current_product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Validate input data and prepare update fields
         update_fields = {}
-        if 'product' in product_data:
+        changes_made = []
+        
+        if 'product' in product_data and product_data['product'] != current_product['product']:
             update_fields['product'] = product_data['product']
-        if 'category' in product_data:
+            changes_made.append(f"Product name changed from '{current_product['product']}' to '{product_data['product']}'")
+        
+        if 'category' in product_data and product_data['category'] != current_product['category']:
             update_fields['category'] = product_data['category']
+            changes_made.append(f"Category changed from '{current_product['category']}' to '{product_data['category']}'")
+        
+        # Track stock changes specifically
+        stock_changed = False
+        previous_stock = current_product['in_stock']
+        new_stock = previous_stock
+        
         if 'in_stock' in product_data:
-            update_fields['in_stock'] = int(product_data['in_stock'])
+            new_stock = int(product_data['in_stock'])
+            if new_stock != previous_stock:
+                update_fields['in_stock'] = new_stock
+                stock_changed = True
+                stock_difference = new_stock - previous_stock
+                changes_made.append(f"Stock changed from {previous_stock} to {new_stock} (difference: {stock_difference:+d})")
+        
         if 'unit_price' in product_data:
-            update_fields['unit_price'] = float(product_data['unit_price'])
+            new_price = float(product_data['unit_price'])
+            if new_price != current_product['unit_price']:
+                update_fields['unit_price'] = new_price
+                changes_made.append(f"Unit price changed from ${current_product['unit_price']:.2f} to ${new_price:.2f}")
         
         if not update_fields:
-            raise HTTPException(status_code=400, detail="No update fields provided")
+            raise HTTPException(status_code=400, detail="No changes detected")
         
         # Perform the update
         result = await inventory_collection.update_one(
-            {"product": product_id},  # Use product name as identifier
+            {"product": product_id},
             {"$set": update_fields}
         )
         
         if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Product not found")
+            raise HTTPException(status_code=404, detail="Product not found or no changes made")
+        
+        # Track inventory update for product modification
+        update_type = "Stock Update" if stock_changed else "Product Updated"
+        quantity_changed = new_stock - previous_stock if stock_changed else 0
+        
+        await track_inventory_update(
+            product=current_product['product'],  # Use original product name
+            update_type=update_type,
+            quantity_changed=quantity_changed,
+            previous_stock=previous_stock,
+            new_stock=new_stock,
+            reason="Product information updated",
+            additional_details={
+                "changes_made": changes_made,
+                "updated_fields": list(update_fields.keys()),
+                "new_product_name": update_fields.get('product', current_product['product'])
+            },
+            user=current_user.get("name", "unknown")
+        )
         
         # Fetch the updated product to return
-        updated_product = await inventory_collection.find_one({"product": product_id})
+        updated_product = await inventory_collection.find_one({"product": update_fields.get('product', product_id)})
         
         # Convert ObjectId, Decimal128 to JSON-serializable format
         serialized_product = json.loads(json.dumps(updated_product, cls=MongoJSONEncoder))
@@ -540,16 +680,38 @@ async def delete_product(product_name: str, current_user: dict = Depends(get_cur
     try:
         inventory_collection = db["FYPDI"]
         
+        # First, get the product data before deletion to track the change
+        product_to_delete = await inventory_collection.find_one({"product": product_name})
+        
+        if not product_to_delete:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
         # Delete the product
         result = await inventory_collection.delete_one({"product": product_name})
         
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Product not found")
         
-                  
+        # Track inventory update for product deletion
+        await track_inventory_update(
+            product=product_to_delete['product'],
+            update_type="Product Deleted",
+            quantity_changed=-product_to_delete['in_stock'],  # All stock is removed
+            previous_stock=product_to_delete['in_stock'],
+            new_stock=0,  # No stock after deletion
+            reason="Product removed from inventory",
+            additional_details={
+                "category": product_to_delete['category'],
+                "unit_price": product_to_delete['unit_price'],
+                "total_value_removed": product_to_delete['in_stock'] * product_to_delete['unit_price']
+            },
+            user=current_user.get("name", "unknown")
+        )
+        
         return JSONResponse(content={
             "message": "Product deleted successfully",
-            "product_name": product_name
+            "product_name": product_name,
+            "stock_removed": product_to_delete['in_stock']
         })
     
     except Exception as e:
@@ -749,6 +911,83 @@ async def logout(credentials: HTTPAuthorizationCredentials = Security(security))
     except Exception as e:
         logging.error(f"Logout error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Additional endpoint to get inventory update history
+@app.get("/inventory-updates")
+async def get_inventory_updates(current_user: dict = Depends(get_current_user), limit: int = 100):
+    """Get recent inventory updates for monitoring purposes"""
+    try:
+        inventory_updates_collection = db["FYPD_INVENTORY_UPDATES"]
+        
+        # Fetch recent updates, sorted by date in descending order
+        updates = await inventory_updates_collection.find().sort("update_date", -1).limit(limit).to_list(length=limit)
+        
+        # Convert ObjectId and datetime to JSON-serializable format
+        serialized_updates = json.loads(json.dumps(updates, cls=MongoJSONEncoder))
+        
+        return JSONResponse(content=serialized_updates)
+    
+    except Exception as e:
+        logging.error(f"Error fetching inventory updates: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error fetching inventory updates")
+
+# Endpoint to get inventory update statistics
+@app.get("/inventory-update-stats")
+async def get_inventory_update_stats(current_user: dict = Depends(get_current_user)):
+    """Get statistics about inventory updates"""
+    try:
+        inventory_updates_collection = db["FYPD_INVENTORY_UPDATES"]
+        
+        # Get current date for filtering
+        current_date = datetime.now()
+        today_start = datetime.combine(current_date.date(), datetime.min.time())
+        week_start = current_date - timedelta(days=7)
+        month_start = current_date - timedelta(days=30)
+        
+        # Aggregate statistics
+        stats_pipeline = [
+            {
+                "$facet": {
+                    "today_updates": [
+                        {"$match": {"update_date": {"$gte": today_start}}},
+                        {"$group": {"_id": "$update_type", "count": {"$sum": 1}}}
+                    ],
+                    "week_updates": [
+                        {"$match": {"update_date": {"$gte": week_start}}},
+                        {"$group": {"_id": "$update_type", "count": {"$sum": 1}}}
+                    ],
+                    "month_updates": [
+                        {"$match": {"update_date": {"$gte": month_start}}},
+                        {"$group": {"_id": "$update_type", "count": {"$sum": 1}}}
+                    ],
+                    "total_by_type": [
+                        {"$group": {"_id": "$update_type", "count": {"$sum": 1}}}
+                    ]
+                }
+            }
+        ]
+        
+        result = await inventory_updates_collection.aggregate(stats_pipeline).to_list(length=1)
+        
+        if result:
+            stats = result[0]
+            return JSONResponse(content={
+                "today_updates": stats.get("today_updates", []),
+                "week_updates": stats.get("week_updates", []),
+                "month_updates": stats.get("month_updates", []),
+                "total_by_type": stats.get("total_by_type", [])
+            })
+        else:
+            return JSONResponse(content={
+                "today_updates": [],
+                "week_updates": [],
+                "month_updates": [],
+                "total_by_type": []
+            })
+    
+    except Exception as e:
+        logging.error(f"Error fetching inventory update stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error fetching inventory update statistics")
     
 # Custom exception handler for validation errors
 @app.exception_handler(HTTPException)

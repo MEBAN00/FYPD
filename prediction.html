@@ -32,6 +32,34 @@
             </div>
         </nav>
 
+        <!-- CSV Download Section -->
+        <div class="mb-8 bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 border-2 border-green-200">
+            <h2 class="text-xl font-bold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-800 to-green-600">
+                Export Data
+            </h2>
+            <div class="text-center">
+                <button 
+                    id="downloadAllBtn" 
+                    class="bg-gradient-to-r from-green-600 to-green-800 text-white px-8 py-3 rounded-lg hover:opacity-90 transition transform active:scale-95 font-medium"
+                    onclick="downloadAllCSVs()"
+                >
+                    📊 Download All Reports (3 Files)
+                </button>
+                <p class="text-sm text-gray-600 mt-2">Downloads: Predicted Profits, Sales Data, and Inventory Updates</p>
+            </div>
+            
+            <!-- Download Status -->
+            <div id="downloadStatus" class="mt-4 text-center hidden">
+                <div class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-50 text-blue-700">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating CSV files...
+                </div>
+            </div>
+        </div>
+
         <!-- Main Content -->
         <div class="grid md:grid-cols-2 gap-8">
             <!-- Prediction Form -->
@@ -145,199 +173,284 @@
                 <div id="insightText" class="mt-4 text-center text-gray-700"></div>
             </div>
         </div>
-    </div>
 
-    <!-- Add this section after the Prediction Visualization div in the existing grid -->
-<div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 border-2 border-purple-200 col-span-2">
-    <h3 class="text-xl font-bold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-blue-600">
-        Inventory Turnover Analysis
-    </h3>
-    
-    <!-- Overall Metrics -->
-    <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="bg-blue-50 p-4 rounded-lg">
-            <h4 class="text-sm font-medium text-gray-600">Overall Turnover Rate</h4>
-            <p id="overallTurnover" class="text-2xl font-bold text-blue-600">-</p>
-            <p class="text-xs text-gray-500">times per year</p>
-        </div>
-        <div class="bg-blue-50 p-4 rounded-lg">
-            <h4 class="text-sm font-medium text-gray-600">Total Inventory</h4>
-            <p id="totalInventory" class="text-2xl font-bold text-blue-600">-</p>
-            <p class="text-xs text-gray-500">units</p>
-        </div>
-        <div class="bg-blue-50 p-4 rounded-lg">
-            <h4 class="text-sm font-medium text-gray-600">Total Sales</h4>
-            <p id="totalSales" class="text-2xl font-bold text-blue-600">-</p>
-            <p class="text-xs text-gray-500">units sold this year</p>
+        <!-- Inventory Turnover Analysis -->
+        <div class="mt-8 bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 border-2 border-purple-200">
+            <h3 class="text-xl font-bold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-blue-600">
+                Inventory Turnover Analysis
+            </h3>
+            
+            <!-- Overall Metrics -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-gray-600">Overall Turnover Rate</h4>
+                    <p id="overallTurnover" class="text-2xl font-bold text-blue-600">-</p>
+                    <p class="text-xs text-gray-500">times per year</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-gray-600">Total Inventory</h4>
+                    <p id="totalInventory" class="text-2xl font-bold text-blue-600">-</p>
+                    <p class="text-xs text-gray-500">units</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-gray-600">Total Sales</h4>
+                    <p id="totalSales" class="text-2xl font-bold text-blue-600">-</p>
+                    <p class="text-xs text-gray-500">units sold this year</p>
+                </div>
+            </div>
+
+            <!-- Product Turnover Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
+                            <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity Sold</th>
+                            <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Turnover Rate</th>
+                            <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Days Inventory</th>
+                        </tr>
+                    </thead>
+                    <tbody id="turnoverTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-
-    <!-- Product Turnover Table -->
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead>
-                <tr>
-                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
-                    <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity Sold</th>
-                    <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Turnover Rate</th>
-                    <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Days Inventory</th>
-                </tr>
-            </thead>
-            <tbody id="turnoverTableBody" class="bg-white divide-y divide-gray-200">
-                <!-- Data will be populated here -->
-            </tbody>
-        </table>
-    </div>
-</div>
-
 
     <script>
         // Function to get the authentication token from localStorage
         function getAuthToken() {
-                const user = JSON.parse(localStorage.getItem('user'));
-                return user ? user.access_token : null;
+            const user = JSON.parse(localStorage.getItem('user'));
+            return user ? user.access_token : null;
+        }
+    
+        // Function to check if user is authenticated
+        function isAuthenticated() {
+            const token = getAuthToken();
+            return !!token;
+        }
+    
+        // Redirect to login if not authenticated
+        function checkAuth() {
+            if (!isAuthenticated()) {
+                window.location.href = 'index.html';
             }
-        
-            // Function to check if user is authenticated
-            function isAuthenticated() {
-                const token = getAuthToken();
-                return !!token;
+        }
+    
+        // Function to make authenticated fetch requests
+        async function authenticatedFetch(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                throw new Error('No authentication token found');
             }
-        
-            // Redirect to login if not authenticated
-            function checkAuth() {
-                if (!isAuthenticated()) {
-                    window.location.href = 'index.html';
-                }
+    
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            };
+    
+            const mergedOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...options.headers,
+                },
+            };
+    
+            const response = await fetch(url, mergedOptions);
+    
+            if (response.status === 401) {
+                // Token might be expired or invalid
+                localStorage.removeItem('user');
+                window.location.href = 'index.html';
+                throw new Error('Authentication failed');
             }
-        
-            // Function to make authenticated fetch requests
-            async function authenticatedFetch(url, options = {}) {
-                const token = getAuthToken();
-                if (!token) {
-                    throw new Error('No authentication token found');
-                }
-        
-                const defaultOptions = {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                };
-        
-                const mergedOptions = {
-                    ...defaultOptions,
-                    ...options,
-                    headers: {
-                        ...defaultOptions.headers,
-                        ...options.headers,
-                    },
-                };
-        
-                const response = await fetch(url, mergedOptions);
-        
-                if (response.status === 401) {
-                    // Token might be expired or invalid
-                    localStorage.removeItem('user');
-                    window.location.href = 'index.html';
-                    throw new Error('Authentication failed');
-                }
-        
-                return response;
-            }
-        
-            // Check authentication before loading the page
-            checkAuth();
+    
+            return response;
+        }
+    
+        // Check authentication before loading the page
+        checkAuth();
+
         // Store inventory data globally
         let inventoryData = [];
 
-        // Fetch inventory data and set up search functionality
-        async function loadInventoryData() {
-    try {
-        const response = await authenticatedFetch('https://fypd.onrender.com/inventory');
-        
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
+        // CSV Download Functions
+        async function downloadAllCSVs() {
+            const downloadBtn = document.getElementById('downloadAllBtn');
+            const downloadStatus = document.getElementById('downloadStatus');
+            
+            try {
+                // Show loading state
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = 'Generating Files...';
+                downloadStatus.classList.remove('hidden');
+                
+                // Fetch all CSV data
+                const response = await authenticatedFetch('https://fypd.onrender.com/generate-all-csvs');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to generate CSV files');
+                }
+                
+                const data = await response.json();
+                
+                // Download each file
+                downloadCSVFile(data.profits.content, data.profits.filename);
+                
+                // Add small delays between downloads to prevent browser blocking
+                setTimeout(() => {
+                    downloadCSVFile(data.sales.content, data.sales.filename);
+                }, 500);
+                
+                setTimeout(() => {
+                    downloadCSVFile(data.inventory.content, data.inventory.filename);
+                }, 1000);
+                
+                // Show success message
+                setTimeout(() => {
+                    downloadStatus.innerHTML = `
+                        <div class="inline-flex items-center px-4 py-2 rounded-lg bg-green-50 text-green-700">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Successfully downloaded 3 CSV files!
+                        </div>
+                    `;
+                    
+                    setTimeout(() => {
+                        downloadStatus.classList.add('hidden');
+                    }, 3000);
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error downloading CSV files:', error);
+                downloadStatus.innerHTML = `
+                    <div class="inline-flex items-center px-4 py-2 rounded-lg bg-red-50 text-red-700">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                        Error downloading files. Please try again.
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    downloadStatus.classList.add('hidden');
+                }, 3000);
+            } finally {
+                // Reset button state
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = '📊 Download All Reports (3 Files)';
+            }
         }
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch inventory');
+        function downloadCSVFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
         }
-        const data = await response.json();
-        inventoryData = data.inventory.sort((a, b) => a.product.localeCompare(b.product));
-        initializeSearchDropdown();
-    } catch (error) {
-        console.error('Error loading inventory:', error);
-        document.getElementById('productSearch').placeholder = 'Error loading products';
-    }
-}
+
+        // Fetch inventory data and set up search functionality
+        async function loadInventoryData() {
+            try {
+                const response = await authenticatedFetch('https://fypd.onrender.com/inventory');
+                
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch inventory');
+                }
+                const data = await response.json();
+                inventoryData = data.inventory.sort((a, b) => a.product.localeCompare(b.product));
+                initializeSearchDropdown();
+            } catch (error) {
+                console.error('Error loading inventory:', error);
+                document.getElementById('productSearch').placeholder = 'Error loading products';
+            }
+        }
 
         // Function to load inventory turnover data
         async function loadInventoryTurnover() {
-    try {
-        const response = await authenticatedFetch('https://fypd.onrender.com/inventory-turnover');
+            try {
+                const response = await authenticatedFetch('https://fypd.onrender.com/inventory-turnover');
 
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch inventory turnover data');
+                }
+                const data = await response.json();
+                
+                // Update overall metrics
+                document.getElementById('overallTurnover').textContent = data.overall_metrics.overall_turnover_rate;
+                document.getElementById('totalInventory').textContent = data.overall_metrics.total_inventory.toLocaleString();
+                document.getElementById('totalSales').textContent = data.overall_metrics.total_sales.toLocaleString();
+                
+                // Update table
+                const tableBody = document.getElementById('turnoverTableBody');
+                tableBody.innerHTML = '';
+                
+                data.turnover_data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.product}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${item.current_stock.toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${item.quantity_sold.toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${getColorClass(item.turnover_rate)}">${item.turnover_rate}x</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${item.days_inventory === Infinity ? '∞' : item.days_inventory}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading inventory turnover:', error);
+            }
         }
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch inventory turnover data');
+        async function handleLogout() {
+            try {
+                const response = await authenticatedFetch('https://fypd.onrender.com/logout', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    localStorage.removeItem('userData');
+                    window.location.href = 'index.html';
+                } else {
+                    console.error('Logout failed');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
         }
-        const data = await response.json();
-        
-        // Update overall metrics
-        document.getElementById('overallTurnover').textContent = data.overall_metrics.overall_turnover_rate;
-        document.getElementById('totalInventory').textContent = data.overall_metrics.total_inventory.toLocaleString();
-        document.getElementById('totalSales').textContent = data.overall_metrics.total_sales.toLocaleString();
-        
-        // Update table
-        const tableBody = document.getElementById('turnoverTableBody');
-        tableBody.innerHTML = '';
-        
-        data.turnover_data.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.product}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${item.current_stock.toLocaleString()}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${item.quantity_sold.toLocaleString()}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${getColorClass(item.turnover_rate)}">${item.turnover_rate}x</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${item.days_inventory === Infinity ? '∞' : item.days_inventory}</td>
-            `;
-            tableBody.appendChild(row);
-        });
-    } catch (error) {
-        console.error('Error loading inventory turnover:', error);
-    }
-}
 
-async function handleLogout() {
-    try {
-        const response = await authenticatedFetch('https://fypd.onrender.com/logout', {
-            method: 'POST'
-        });
-        
-        if (response.ok) {
-            localStorage.removeItem('userData');
-            window.location.href = 'index.html';
-        } else {
-            console.error('Logout failed');
+        // Helper function to determine color class based on turnover rate
+        function getColorClass(rate) {
+            if (rate >= 6) return 'text-green-600 font-medium';
+            if (rate >= 4) return 'text-blue-600 font-medium';
+            if (rate >= 2) return 'text-yellow-600 font-medium';
+            return 'text-red-600 font-medium';
         }
-    } catch (error) {
-        console.error('Logout error:', error);
-    }
-}
-
-    // Helper function to determine color class based on turnover rate
-    function getColorClass(rate) {
-        if (rate >= 6) return 'text-green-600 font-medium';
-        if (rate >= 4) return 'text-blue-600 font-medium';
-        if (rate >= 2) return 'text-yellow-600 font-medium';
-        return 'text-red-600 font-medium';
-    }
 
         function initializeSearchDropdown() {
             const searchInput = document.getElementById('productSearch');
@@ -399,102 +512,100 @@ async function handleLogout() {
         // Prediction Chart
         let predictionChart = null;
 
-        // Handle form submission
         // Handle form submission with authentication
-document.getElementById('predictionForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const predictionResult = document.getElementById('predictionResult');
-    const insightText = document.getElementById('insightText');
-    predictionResult.textContent = 'Processing prediction...';
-    insightText.textContent = '';
+        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const predictionResult = document.getElementById('predictionResult');
+            const insightText = document.getElementById('insightText');
+            predictionResult.textContent = 'Processing prediction...';
+            insightText.textContent = '';
 
-    if (predictionChart) {
-        predictionChart.destroy();
-    }
+            if (predictionChart) {
+                predictionChart.destroy();
+            }
 
-    const formData = {
-        product: document.getElementById('selectedProduct').value,
-        quantity: parseInt(document.getElementById('quantity').value),
-        unit_price: parseFloat(document.getElementById('unitPrice').value),
-        total_cost: parseFloat(document.getElementById('totalCost').value),
-        total_price: parseFloat(document.getElementById('totalPrice').value),
-        Year: parseInt(document.getElementById('year').value)
-    };
+            const formData = {
+                product: document.getElementById('selectedProduct').value,
+                quantity: parseInt(document.getElementById('quantity').value),
+                unit_price: parseFloat(document.getElementById('unitPrice').value),
+                total_cost: parseFloat(document.getElementById('totalCost').value),
+                total_price: parseFloat(document.getElementById('totalPrice').value),
+                Year: parseInt(document.getElementById('year').value)
+            };
 
-    try {
-        const response = await authenticatedFetch('https://fypd.onrender.com/predict', {
-            method: 'POST',
-            body: JSON.stringify(formData)
-        });
+            try {
+                const response = await authenticatedFetch('https://fypd.onrender.com/predict', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
 
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
-        }
-
-        if (!response.ok) {
-            throw new Error('Prediction failed');
-        }
-
-        const result = await response.json();
-        
-        // Update prediction result and create chart
-        predictionResult.textContent = `Predicted Gross Profit: $${result.prediction.toLocaleString()}`;
-
-        // Create insight chart
-        const ctx = document.getElementById('predictionChart').getContext('2d');
-        predictionChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Predicted Profit', 'Total Cost', 'Total Price'],
-                datasets: [{
-                    label: 'Financial Breakdown',
-                    data: [
-                        result.prediction, 
-                        formData.total_cost, 
-                        formData.total_price
-                    ],
-                    backgroundColor: [
-                        'rgba(75, 192, 192, 0.6)',
-                        'rgba(255, 99, 132, 0.6)',
-                        'rgba(54, 162, 235, 0.6)'
-                    ],
-                    borderColor: [
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
                 }
+
+                if (!response.ok) {
+                    throw new Error('Prediction failed');
+                }
+
+                const result = await response.json();
+                
+                // Update prediction result and create chart
+                predictionResult.textContent = `Predicted Gross Profit: $${result.prediction.toLocaleString()}`;
+
+                // Create insight chart
+                const ctx = document.getElementById('predictionChart').getContext('2d');
+                predictionChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Predicted Profit', 'Total Cost', 'Total Price'],
+                        datasets: [{
+                            label: 'Financial Breakdown',
+                            data: [
+                                result.prediction, 
+                                formData.total_cost, 
+                                formData.total_price
+                            ],
+                            backgroundColor: [
+                                'rgba(75, 192, 192, 0.6)',
+                                'rgba(255, 99, 132, 0.6)',
+                                'rgba(54, 162, 235, 0.6)'
+                            ],
+                            borderColor: [
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                // Add insights
+                const profitMargin = (result.prediction / formData.total_price * 100).toFixed(2);
+                insightText.textContent = `Your ${formData.product} prediction shows a ${profitMargin}% profit margin. 
+                    The gross profit suggests a ${profitMargin > 20 ? 'strong' : 'moderate'} financial outlook for this product in ${formData.Year}.`;
+
+            } catch (error) {
+                predictionResult.textContent = 'Error processing prediction';
+                console.error('Prediction error:', error);
             }
         });
 
-        // Add insights
-        const profitMargin = (result.prediction / formData.total_price * 100).toFixed(2);
-        insightText.textContent = `Your ${formData.product} prediction shows a ${profitMargin}% profit margin. 
-            The gross profit suggests a ${profitMargin > 20 ? 'strong' : 'moderate'} financial outlook for this product in ${formData.Year}.`;
-
-    } catch (error) {
-        predictionResult.textContent = 'Error processing prediction';
-        console.error('Prediction error:', error);
-    }
-});
-    
-
         // Load turnover data when page loads
-    document.addEventListener('DOMContentLoaded', () => {
-        loadInventoryTurnover();
-        // Refresh every 5 minutes
-        setInterval(loadInventoryTurnover, 300000);
-    });
+        document.addEventListener('DOMContentLoaded', () => {
+            loadInventoryTurnover();
+            // Refresh every 5 minutes
+            setInterval(loadInventoryTurnover, 300000);
+        });
     </script>
 </body>
 </html>
