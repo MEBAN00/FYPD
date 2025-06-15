@@ -94,9 +94,15 @@ class MongoJSONEncoder(json.JSONEncoder):
         if isinstance(o, ObjectId):
             return str(o)
         elif isinstance(o, Decimal128):
-            return float(o.to_decimal())  # Convert Decimal128 to float
+            # FIX: Handle Decimal128 formatting properly
+            try:
+                return float(o.to_decimal())
+            except Exception:
+                return str(o)  # Fallback to string representation
         elif isinstance(o, datetime):
             return o.isoformat()  # Convert datetime to ISO 8601 string
+        elif isinstance(o, Decimal):
+            return float(o)
         return super().default(o)
 
 class UserSignup(BaseModel):
@@ -351,7 +357,6 @@ async def get_inventory(current_user: dict = Depends(get_current_user)):
         logging.error(f"Error fetching inventory: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching inventory data")
 
-
 @app.post("/add-product")
 async def add_product(product_data: dict, current_user: dict = Depends(get_current_user)):
     try:
@@ -361,12 +366,19 @@ async def add_product(product_data: dict, current_user: dict = Depends(get_curre
             if field not in product_data:
                 raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
         
+        # FIX: Convert unit_price to Decimal128 for consistency
+        try:
+            unit_price_decimal = Decimal(str(product_data['unit_price']))
+            unit_price_decimal128 = Decimal128(unit_price_decimal)
+        except (ValueError, TypeError) as e:
+            raise HTTPException(status_code=400, detail=f"Invalid unit price format: {str(e)}")
+        
         # Prepare the product document
         new_product = {
             'product': product_data['product'],
             'category': product_data['category'],
             'in_stock': int(product_data['in_stock']),
-            'unit_price': float(product_data['unit_price'])  # Convert to float instead of Decimal
+            'unit_price': unit_price_decimal128  # Use Decimal128 instead of float
         }
         
         # Insert into MongoDB
@@ -383,7 +395,7 @@ async def add_product(product_data: dict, current_user: dict = Depends(get_curre
             reason="New product added to inventory",
             additional_details={
                 "category": new_product['category'],
-                "unit_price": new_product['unit_price'],
+                "unit_price": float(unit_price_decimal),  # Convert to float for logging
                 "product_id": str(result.inserted_id)
             },
             user=current_user.get("name", "unknown")
@@ -626,11 +638,26 @@ async def update_product(product_id: str, product_data: dict, current_user: dict
                 stock_difference = new_stock - previous_stock
                 changes_made.append(f"Stock changed from {previous_stock} to {new_stock} (difference: {stock_difference:+d})")
         
+        # FIX: Handle unit_price consistently as Decimal128
         if 'unit_price' in product_data:
-            new_price = float(product_data['unit_price'])
-            if new_price != current_product['unit_price']:
-                update_fields['unit_price'] = new_price
-                changes_made.append(f"Unit price changed from ${current_product['unit_price']:.2f} to ${new_price:.2f}")
+            try:
+                # Convert to Decimal first, then to Decimal128
+                new_price_decimal = Decimal(str(product_data['unit_price']))
+                new_price_decimal128 = Decimal128(new_price_decimal)
+                
+                # Compare with current price (handle both float and Decimal128)
+                current_price = current_product['unit_price']
+                if isinstance(current_price, Decimal128):
+                    current_price_decimal = current_price.to_decimal()
+                else:
+                    current_price_decimal = Decimal(str(current_price))
+                
+                if new_price_decimal != current_price_decimal:
+                    update_fields['unit_price'] = new_price_decimal128
+                    changes_made.append(f"Unit price changed from ${float(current_price_decimal):.2f} to ${float(new_price_decimal):.2f}")
+                    
+            except (ValueError, TypeError) as e:
+                raise HTTPException(status_code=400, detail=f"Invalid unit price format: {str(e)}")
         
         if not update_fields:
             raise HTTPException(status_code=400, detail="No changes detected")
