@@ -27,36 +27,23 @@
                 <a href="sales.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
                     Sales
                 </a>
-                <button id="logoutButton" class="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition duration-300 ease-in-out" onclick="handleLogout()"> Logout 
+                <button id="reportsButton" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out" onclick="downloadAllCSVs()">
+                    Reports
+                </button>
+                <button id="logoutButton" class="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition duration-300 ease-in-out" onclick="handleLogout()">
+                    Logout 
                 </button>
             </div>
         </nav>
 
-        <!-- CSV Download Section -->
-        <div class="mb-8 bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 border-2 border-green-200">
-            <h2 class="text-xl font-bold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-800 to-green-600">
-                Export Data
-            </h2>
-            <div class="text-center">
-                <button 
-                    id="downloadAllBtn" 
-                    class="bg-gradient-to-r from-green-600 to-green-800 text-white px-8 py-3 rounded-lg hover:opacity-90 transition transform active:scale-95 font-medium"
-                    onclick="downloadAllCSVs()"
-                >
-                    📊 Download All Reports (3 Files)
-                </button>
-                <p class="text-sm text-gray-600 mt-2">Downloads: Predicted Profits, Sales Data, and Inventory Updates</p>
-            </div>
-            
-            <!-- Download Status -->
-            <div id="downloadStatus" class="mt-4 text-center hidden">
-                <div class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-50 text-blue-700">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Generating CSV files...
-                </div>
+        <!-- Download Status (Hidden by default, shown during download) -->
+        <div id="downloadStatus" class="mb-4 text-center hidden">
+            <div class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-50 text-blue-700">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Generating CSV files...
             </div>
         </div>
 
@@ -282,13 +269,14 @@
 
         // CSV Download Functions
         async function downloadAllCSVs() {
-            const downloadBtn = document.getElementById('downloadAllBtn');
+            const reportsBtn = document.getElementById('reportsButton');
             const downloadStatus = document.getElementById('downloadStatus');
             
             try {
                 // Show loading state
-                downloadBtn.disabled = true;
-                downloadBtn.textContent = 'Generating Files...';
+                reportsBtn.disabled = true;
+                reportsBtn.textContent = 'Generating...';
+                reportsBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 downloadStatus.classList.remove('hidden');
                 
                 // Fetch all CSV data
@@ -344,8 +332,9 @@
                 }, 3000);
             } finally {
                 // Reset button state
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = '📊 Download All Reports (3 Files)';
+                reportsBtn.disabled = false;
+                reportsBtn.textContent = 'Reports';
+                reportsBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
 
