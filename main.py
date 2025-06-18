@@ -301,7 +301,7 @@ async def get_inventory(current_user: dict = Depends(get_current_user)):
     try:
         # Fetch all inventory data from MongoDB
         inventory_collection = db["FYPDI"]
-        products = await inventory_collection.find().to_list(length=50)  # No limit
+        products = await inventory_collection.find().to_list(length=None)  # No limit
 
         # Remove duplicates by using a dictionary keyed by product name
         unique_products = {}
@@ -759,7 +759,7 @@ async def get_inventory_turnover(current_user: dict = Depends(get_current_user))
         inventory_collection = db["FYPDI"]
         
         # Limit inventory fetch to 50 products
-        inventory = await inventory_collection.find().sort("product", 1).limit(50).to_list(length=50)
+        inventory = await inventory_collection.find().sort("product", 1).limit(None).to_list(length=None)
         
         # Get the product names from the limited inventory
         product_names = [product["product"] for product in inventory]
