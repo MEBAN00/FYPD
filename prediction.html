@@ -280,7 +280,7 @@
                 downloadStatus.classList.remove('hidden');
                 
                 // Fetch all CSV data
-                const response = await authenticatedFetch('https://fypd.onrender.com/generate-all-csvs');
+                const response = await authenticatedFetch('https://fypd-production.up.railway.app/generate-all-csvs');
                 
                 if (!response.ok) {
                     throw new Error('Failed to generate CSV files');
@@ -357,7 +357,7 @@
         // Fetch inventory data and set up search functionality
         async function loadInventoryData() {
             try {
-                const response = await authenticatedFetch('https://fypd.onrender.com/inventory');
+                const response = await authenticatedFetch('https://fypd-production.up.railway.app/inventory');
                 
                 if (response.status === 401) {
                     handleUnauthorized();
@@ -379,7 +379,7 @@
         // Function to load inventory turnover data
         async function loadInventoryTurnover() {
             try {
-                const response = await authenticatedFetch('https://fypd.onrender.com/inventory-turnover');
+                const response = await authenticatedFetch('https://fypd-production.up.railway.app/inventory-turnover');
 
                 if (response.status === 401) {
                     handleUnauthorized();
@@ -418,7 +418,7 @@
 
         async function handleLogout() {
             try {
-                const response = await authenticatedFetch('https://fypd.onrender.com/logout', {
+                const response = await authenticatedFetch('https://fypd-production.up.railway.app/logout', {
                     method: 'POST'
                 });
                 
@@ -523,7 +523,7 @@
             };
 
             try {
-                const response = await authenticatedFetch('https://fypd.onrender.com/predict', {
+                const response = await authenticatedFetch('https://fypd-production.up.railway.app/predict', {
                     method: 'POST',
                     body: JSON.stringify(formData)
                 });

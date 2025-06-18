@@ -245,7 +245,7 @@
         };
 
         try {
-            const response = await authenticatedFetch("https://fypd.onrender.com/create-sale", {
+            const response = await authenticatedFetch("https://fypd-production.up.railway.app/create-sale", {
                 method: "POST",
                 body: JSON.stringify(saleData)
             });
@@ -305,7 +305,7 @@
     // Function to load sales data
     async function loadSales() {
         try {
-            const response = await authenticatedFetch("https://fypd.onrender.com/sales");
+            const response = await authenticatedFetch("https://fypd-production.up.railway.app/sales");
 
             if (response.status === 401) {
                 handleUnauthorized();
@@ -343,7 +343,7 @@
     // Function to load summary data
     async function loadSummaryData() {
         try {
-            const response = await authenticatedFetch("https://fypd.onrender.com/sales-summary");
+            const response = await authenticatedFetch("https://fypd-production.up.railway.app/sales-summary");
 
             if (response.status === 401) {
                 handleUnauthorized();
@@ -364,7 +364,7 @@
     // Function to load inventory data
     async function loadInventoryData() {
         try {
-            const response = await authenticatedFetch("https://fypd.onrender.com/inventory");
+            const response = await authenticatedFetch("https://fypd-production.up.railway.app/inventory");
 
             if (response.status === 401) {
                 handleUnauthorized();
@@ -400,7 +400,7 @@
     // Handle logout
     document.getElementById('logoutButton').addEventListener('click', async () => {
         try {
-            const response = await authenticatedFetch('https://fypd.onrender.com/logout', {
+            const response = await authenticatedFetch('https://fypd-production.up.railway.app/logout', {
                 method: 'POST'
             });
             
