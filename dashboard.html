@@ -179,7 +179,7 @@ function updateWelcomeMessage() {
 // Function to fetch and render monthly revenue
 async function fetchMonthlyRevenue() {
     try {
-        const response = await authenticatedFetch('https://fypd.onrender.com/monthly-revenue');
+        const response = await authenticatedFetch('https://fypd-production.up.railway.app/monthly-revenue');
         const data = await response.json();
 
         const ctx = document.getElementById('revenueChart').getContext('2d');
@@ -223,7 +223,7 @@ async function fetchMonthlyRevenue() {
 // Function to fetch and render sales summary
 async function fetchSalesSummary() {
     try {
-        const response = await authenticatedFetch('https://fypd.onrender.com/sales-summary');
+        const response = await authenticatedFetch('https://fypd-production.up.railway.app/sales-summary');
         const data = await response.json();
 
         // Update dashboard metrics
@@ -239,7 +239,7 @@ async function fetchSalesSummary() {
 // Function to fetch recent sales
 async function fetchRecentSales() {
     try {
-        const response = await authenticatedFetch('https://fypd.onrender.com/sales');
+        const response = await authenticatedFetch('https://fypd-production.up.railway.app/sales');
         const sales = await response.json();
         const recentActivityList = document.getElementById('recentActivityList');
         
@@ -268,7 +268,7 @@ async function fetchRecentSales() {
 // Updated logout handler
 async function handleLogout() {
     try {
-        const response = await authenticatedFetch('https://fypd.onrender.com/logout', {
+        const response = await authenticatedFetch('https://fypd-production.up.railway.app/logout', {
             method: 'POST'
         });
 

@@ -245,7 +245,7 @@
             // Function to fetch inventory data
             async function fetchInventoryData() {
                 try {
-                    const response = await authenticatedFetch('https://fypd.onrender.com/inventory');
+                    const response = await authenticatedFetch('https://fypd-production.up.railway.app/inventory');
         
                     if (response.status === 401) {
                         handleUnauthorized();
@@ -329,7 +329,7 @@
         
                     if (product && category && in_stock && unit_price) {
                         try {
-                            const response = await authenticatedFetch('https://fypd.onrender.com/add-product', {
+                            const response = await authenticatedFetch('https://fypd-production.up.railway.app/add-product', {
                                 method: 'POST',
                                 body: JSON.stringify({
                                     product,
@@ -406,7 +406,7 @@
                     };
         
                     try {
-                        const response = await authenticatedFetch(`https://fypd.onrender.com/update-product/${productName}`, {
+                        const response = await authenticatedFetch(`https://fypd-production.up.railway.app/update-product/${productName}`, {
                             method: 'PUT',
                             body: JSON.stringify(updatedData),
                         });
@@ -446,7 +446,7 @@
         
                 deleteModal.querySelector('#confirmDeleteBtn').onclick = async () => {
                     try {
-                        const response = await authenticatedFetch(`https://fypd.onrender.com/delete-product/${productName}`, {
+                        const response = await authenticatedFetch(`https://fypd-production.up.railway.app/delete-product/${productName}`, {
                             method: 'DELETE',
                         });
         
@@ -476,7 +476,7 @@
             // Update the logout handler
             document.getElementById('logoutButton').addEventListener('click', async () => {
                 try {
-                    const response = await authenticatedFetch('https://fypd.onrender.com/logout', {
+                    const response = await authenticatedFetch('https://fypd-production.up.railway.app/logout', {
                         method: 'POST'
                     });
         
