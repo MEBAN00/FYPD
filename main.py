@@ -1016,6 +1016,33 @@ async def get_inventory_update_stats(current_user: dict = Depends(get_current_us
         logging.error(f"Error fetching inventory update stats: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching inventory update statistics")
     
+@app.get("/sales-analytics-preview")
+async def get_sales_analytics_preview(current_user: dict = Depends(get_current_user)):
+    """Get a preview of sales analytics data for the frontend"""
+    try:
+        from csv_download_routes import generate_sales_analytics
+        analytics_data = await generate_sales_analytics(current_user)
+        
+        if "error" in analytics_data:
+            raise HTTPException(status_code=500, detail=analytics_data["error"])
+        
+        # Return just the summary and chart data for frontend display
+        return JSONResponse(content={
+            "summary": analytics_data["summary"],
+            "product_sales_chart": {
+                "labels": list(analytics_data["product_sales"].keys())[:10],
+                "data": [analytics_data["product_sales"][p]["total_value"] for p in list(analytics_data["product_sales"].keys())[:10]]
+            },
+            "monthly_trend_chart": {
+                "labels": list(analytics_data["monthly_sales"].keys()),
+                "data": [analytics_data["monthly_sales"][m]["total_value"] for m in analytics_data["monthly_sales"].keys()]
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"Error fetching sales analytics preview: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error fetching sales analytics")
+    
 # Custom exception handler for validation errors
 @app.exception_handler(HTTPException)
 async def validation_exception_handler(request, exc):
