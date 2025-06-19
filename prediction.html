@@ -6,11 +6,38 @@
     <title>Profit Prophet</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+    /* Enhanced dropdown z-index fix */
+    .reports-dropdown-container {
+        position: relative;
+        z-index: 9999;
+    }
+    
+    #reportsDropdown {
+        position: absolute !important;
+        z-index: 99999 !important;
+        top: 100% !important;
+        right: 0 !important;
+        margin-top: 0.5rem !important;
+    }
+    
+    /* Ensure navigation has high z-index */
+    nav {
+        position: relative;
+        z-index: 9998;
+    }
+    
+    /* Lower z-index for main content */
+    .main-content {
+        position: relative;
+        z-index: 1;
+    }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-50 via-white to-blue-100 min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <!-- Navigation -->
-        <nav class="mb-8 flex justify-between items-center bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-4 border-2 border-purple-200">
+        <nav class="mb-8 flex justify-between items-center bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-4 border-2 border-purple-200" style="position: relative; z-index: 9998;">
             <div class="flex items-center space-x-4">
                 <div class="w-12 h-12 bg-gradient-to-br from-blue-700 to-blue-900 rounded-full"></div>
                 <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-blue-600">
@@ -27,15 +54,15 @@
                 <a href="sales.html" class="px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition duration-300 ease-in-out">
                     Sales
                 </a>
-                <!-- Enhanced Reports Dropdown -->
-                <div class="relative z-50">
+               <!-- Enhanced Reports Dropdown -->
+                <div class="reports-dropdown-container">
                     <button id="reportsDropdownBtn" class="px-4 py-2 rounded-lg text-white bg-green-500 hover:bg-green-600 transition duration-300 ease-in-out flex items-center">
                         Reports
                         <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
-                    <div id="reportsDropdown" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 hidden z-[9999]">
+                    <div id="reportsDropdown" class="w-64 bg-white rounded-lg shadow-xl border border-gray-200 hidden">
                         <div class="py-2">
                             <button onclick="downloadEnhancedReport()" class="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center">
                                 <svg class="w-4 h-4 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,9 +133,8 @@
             </div>
         </div>
 
-        <!-- Rest of your existing content remains the same -->
         <!-- Main Content -->
-        <div class="grid md:grid-cols-2 gap-8">
+        <div class="main-content grid md:grid-cols-2 gap-8">
             <!-- Prediction Form -->
             <div class="bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 border-2 border-blue-200">
                 <h2 class="text-2xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-blue-600">
@@ -222,7 +248,7 @@
         </div>
 
         <!-- Inventory Turnover Analysis -->
-        <div class="mt-8 bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 border-2 border-purple-200">
+        <div class="main-content mt-8 bg-white/80 backdrop-blur-md rounded-xl shadow-lg p-6 border-2 border-purple-200">
             <h3 class="text-xl font-bold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-blue-600">
                 Inventory Turnover Analysis
             </h3>
@@ -483,7 +509,7 @@
             document.getElementById('analyticsModal').classList.add('hidden');
         }
 
-        // Reports dropdown functionality
+        // Reports dropdown functionality with improved event handling
         document.getElementById('reportsDropdownBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             const dropdown = document.getElementById('reportsDropdown');
@@ -491,8 +517,18 @@
         });
 
         // Close dropdown when clicking outside
-        document.addEventListener('click', function() {
-            document.getElementById('reportsDropdown').classList.add('hidden');
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('reportsDropdown');
+            const button = document.getElementById('reportsDropdownBtn');
+            
+            if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Prevent dropdown from closing when clicking inside it
+        document.getElementById('reportsDropdown').addEventListener('click', function(e) {
+            e.stopPropagation();
         });
 
         // Your existing CSV download function (keep as backup)
