@@ -325,6 +325,7 @@ async def get_inventory(current_user: dict = Depends(get_current_user)):
         for product in sorted_products:
             # Convert Decimal128 to Decimal for calculations
             unit_price = Decimal(str(product['unit_price']))
+            total_cost = Decimal(str(product['total_cost']))
             in_stock = int(product['in_stock'])
             
             # Calculate total value
@@ -338,7 +339,8 @@ async def get_inventory(current_user: dict = Depends(get_current_user)):
                 "product": product['product'],
                 "category": product['category'],
                 "in_stock": in_stock,
-                "unit_price": float(unit_price),  # Convert to float for JSON serialization
+                "unit_price": float(unit_price), 
+                "total_cost": float(total_cost),# Convert to float for JSON serialization
                 "total_value": float(total_value)  # Convert to float for JSON serialization
             })
         

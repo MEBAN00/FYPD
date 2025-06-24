@@ -198,14 +198,15 @@
                             >
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Total Price</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Total Price (Auto-calculated)</label>
                             <input 
                                 type="number" 
                                 id="totalPrice" 
                                 step="0.01" 
-                                class="w-full rounded-lg border-2 border-purple-200 focus:ring-purple-500 focus:border-purple-500 transition"
+                                class="w-full rounded-lg border-2 border-purple-200 focus:ring-purple-500 focus:border-purple-500 transition bg-gray-100"
                                 required 
                                 min="0"
+                                readonly
                             >
                         </div>
                     </div>
@@ -717,14 +718,32 @@
                         searchInput.value = item.product;
                         document.getElementById('selectedProduct').value = item.product;
                         document.getElementById('unitPrice').value = item.unit_price;
+                        // Add this line to also set the total cost from inventory
+                        document.getElementById('totalCost').value = item.total_cost;
                         document.getElementById('quantity').max = item.in_stock;
                         dropdown.classList.add('hidden');
+                        
+                        // Clear total price when product changes
+                        document.getElementById('totalPrice').value = '';
                     });
                     
                     dropdown.appendChild(div);
                 });
             }
         }
+
+        // Auto-calculate total price when quantity changes
+        document.getElementById('quantity').addEventListener('input', function() {
+            const quantity = parseFloat(this.value) || 0;
+            const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+            
+            if (quantity > 0 && unitPrice > 0) {
+                const totalPrice = quantity * unitPrice;
+                document.getElementById('totalPrice').value = totalPrice.toFixed(2);
+            } else {
+                document.getElementById('totalPrice').value = '';
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', loadInventoryData);
 
@@ -821,3 +840,4 @@
     </script>
 </body>
 </html>
+
